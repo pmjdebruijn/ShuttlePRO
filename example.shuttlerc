@@ -88,9 +88,39 @@
 # released (you want to use a ShuttlePRO key as Shift, for example) you
 # can follow it with a /H instead of /D.
 
+# aggraef@gmail.com Fri Aug 3 11:01:32 CEST 2018: It's now also possible
+# to translate events to MIDI messages, and output them via Jack MIDI.
+# To these ends, just invoke the program with the -j (Jack) option.
+# This will start Jack if it's not already running, and create a Jack
+# MIDI client named "shuttlepro" with a single MIDI output port, which
+# can be hooked up to other Jack MIDI applications in the usual way
+# (e.g., using a patchbay program like qjackctl; non-Jack ALSA MIDI
+# applications can be accommodated using a2jmidid).  In the
+# translations, MIDI messages can be freely mixed with keypresses; the
+# MIDI messages will be simply ignored if Jack MIDI output is not enabled.
+
+# Here is a brief rundown of the supported MIDI messages (a more detailed
+# account with examples can be found in readconfig.c):
+
+# CH<1..16>: sets the output channel for subsequent MIDI messages
+# CC<0..127>: outputs a control change message for the given controller
+# PC<0..127>: outputs a program change message
+# PB: outputs a pitch bend message
+# <A..G><#b><0..10> (MIDI notes): outputs the given MIDI note (note on
+# when pressed, note off when released); note names use the customary
+# MIDI notation, with # and b denoting accidentals; the number at the
+# end denotes the MIDI octave in the range 0..10 (C5 is middle C)
+
+# PC and note messages can only be bound to key events (they will be
+# ignored otherwise). CC and PB also work with the jog wheel and the
+# shuttle; if they are bound to key events, pressing the key will
+# produce the maximum controller or pitch bend value, releasing it
+# resets it to zero, or -- for PB -- the center value.
+
 # If you want to see exactly how this file is parsed and converted into
-# KeySym strokes, run the shuttle program in a terminal window and
-# remove the comment character from the following line:
+# KeySym strokes and MIDI messages, run the shuttle program in a
+# terminal window and remove the comment character from the following
+# line:
 
 #DEBUG_STROKES
 
@@ -101,8 +131,11 @@
 #DEBUG_KEYS
 
 # NOTE: The debugging options can also be specified on the command line
-# using -d in conjunction with any of the letters r, s and k. Just -d
-# without any option letter turns on all debugging options.
+# using -d in conjunction with any of the letters r, s and k (or the
+# letter j if you also want debugging output from Jack, if it is
+# enabled).  Just -d without any option letter turns on all debugging
+# options.
+
 
 # As one of the main reasons to use a ShuttlePRO is video editing, I've
 # included a sample set of bindings for Cinelerra as an example.
@@ -182,6 +215,32 @@
 
  JL XK_Left     # Frame reverse
  JR XK_Right    # Frame forward
+
+
+# AG <aggraef@gmail.com>: The special "MIDI" default section is only
+# active when MIDI support is enabled (shuttlepro -j).
+
+[MIDI]
+
+# This is just a little drumkit example.  You need to hook up the
+# shuttlepro MIDI output to a GM-compatible MIDI synthesizer like
+# Fluidsynth to get sound.
+
+# CH 10 switches to MIDI channel 10, the drumkit channel.  Keys K5..K9
+# are used to play MIDI notes B2..D#3 here, which should give you some
+# drum sounds.
+
+ K5 CH10 B2
+ K6 CH10 C3
+ K7 CH10 C#3
+ K8 CH10 D3
+ K9 CH10 D#3
+
+# Also, for illustration, we assign the jog wheel to CC7 which lets you
+# control the volume.
+
+ JL CH10 CC7
+ JR CH10 CC7
 
 
 # Default (mouse emulation)
