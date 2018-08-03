@@ -73,8 +73,14 @@
 
 typedef struct _stroke {
   struct _stroke *next;
+  // nonzero keysym indicates a key event
   KeySym keysym;
   int press; // zero -> release, non-zero -> press
+  // keysym == 0 => MIDI event
+  int status, data; // status and, if applicable, first data byte
+  // the dirty bit indicates a MIDI event for which a release event still
+  // needs to be generated in key events
+  int dirty;
 } stroke;
 
 #define KJS_KEY_DOWN 1

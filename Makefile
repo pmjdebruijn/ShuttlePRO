@@ -8,6 +8,7 @@ INSTALL_DIR=/usr/local/bin
 
 OBJ=\
 	readconfig.o \
+	jackdriver.o \
 	shuttlepro.o
 
 all: shuttlepro
@@ -16,7 +17,7 @@ install: all
 	install shuttle shuttlepro ${INSTALL_DIR}
 
 shuttlepro: ${OBJ}
-	gcc ${CFLAGS} ${OBJ} -o shuttlepro -L /usr/X11R6/lib -lX11 -lXtst
+	gcc ${CFLAGS} ${OBJ} -o shuttlepro -L /usr/X11R6/lib -lX11 -lXtst -ljack
 
 clean:
 	rm -f shuttlepro keys.h $(OBJ)

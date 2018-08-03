@@ -16,6 +16,7 @@
 */
 
 #include "shuttle.h"
+#include "jackdriver.h"
 
 typedef struct input_event EV;
 
@@ -28,6 +29,8 @@ struct timeval last_shuttle;
 int need_synthetic_shuttle;
 Display *display;
 
+JACK_SEQ seq;
+int enable_jack = 0, debug_jack = 0;
 
 void
 initdisplay(void)
@@ -65,6 +68,136 @@ send_key(KeySym key, int press)
   XTestFakeKeyEvent(display, keycode, press ? True : False, DELAY);
 }
 
+// cached controller and pitch bend values
+static int ccvalue[16][128];
+static int pbvalue[16] =
+  {8192, 8192, 8192, 8192, 8192, 8192, 8192, 8192,
+   8192, 8192, 8192, 8192, 8192, 8192, 8192, 8192};
+
+void
+send_midi(int status, int data, int kjs, int index)
+{
+  if (!enable_jack) return; // MIDI support not enabled
+  uint8_t msg[3];
+  int chan = status & 0x0f;
+  msg[0] = status;
+  msg[1] = data;
+  switch (status & 0xf0) {
+  case 0x90:
+    // send a note on (with maximum velocity) for KJS_KEY_DOWN, note off for
+    // KJS_KEY_UP, nothing for non-key input
+    if (kjs == KJS_KEY_DOWN)
+      msg[2] = 127;
+    else if (kjs == KJS_KEY_UP)
+      msg[2] = 0;
+    else
+      return;
+    break;
+  case 0xb0:
+    switch (kjs) {
+      // for key events, send a controller value of 127 (KJS_KEY_DOWN) or 0
+      // (KJS_KEY_UP), similar to how note events are handled
+    case KJS_KEY_DOWN:
+      msg[2] = 127;
+      break;
+    case KJS_KEY_UP:
+      msg[2] = 0;
+      break;
+      // for the jog wheel, increment (index==1) or decrement (index==0) the
+      // current value, clamping it to the 0..127 data byte range
+    case KJS_JOG:
+      if (index) {
+	if (ccvalue[chan][data] >= 127) return;
+	msg[2] = ++ccvalue[chan][data];
+      } else {
+	if (ccvalue[chan][data] == 0) return;
+	msg[2] = --ccvalue[chan][data];
+      }
+      break;
+      // the shuttle is handled similarly in relative mode, but scaled from
+      // 0..14 to the 0..127 data byte range (approximately)
+    case KJS_SHUTTLE_INCR:
+      if (index) {
+	if (ccvalue[chan][data] >= 127) return;
+	ccvalue[chan][data] += 9;
+	if (ccvalue[chan][data] > 127) ccvalue[chan][data] = 127;
+      } else {
+	if (ccvalue[chan][data] == 0) return;
+	ccvalue[chan][data] -= 9;
+	if (ccvalue[chan][data] < 0) ccvalue[chan][data] = 0;
+      }
+      msg[2] = ccvalue[chan][data];
+      break;
+      // absolute shuttle (index gives value), scaled in the same fashion
+    case KJS_SHUTTLE:
+      msg[2] = index * 9;
+      break;
+    default:
+      // this can't happen
+      return;
+    }
+    break;
+  case 0xe0: {
+    // pitch bends are treated similarly to a controller, but with a 14 bit
+    // range (0..16383, with 8192 being the center value)
+    int pbval = 0;
+    switch (kjs) {
+    case KJS_KEY_DOWN:
+      pbval = 16383;
+      break;
+    case KJS_KEY_UP:
+      // we use 8192 (center) as the "home" (a.k.a. "off") value, so the pitch
+      // will only bend up, never down below the center value
+      pbval = 8192;
+      break;
+    case KJS_JOG:
+      if (index) {
+	if (pbvalue[chan] >= 16383) return;
+	pbvalue[chan] += 128;
+	if (pbvalue[chan] > 16383) pbvalue[chan] = 16383;
+      } else {
+	if (pbvalue[chan] == 0) return;
+	pbvalue[chan] -= 128;
+	if (pbvalue[chan] < 0) pbvalue[chan] = 0;
+      }
+      pbval = pbvalue[chan];
+      break;
+    case KJS_SHUTTLE_INCR:
+      if (index) {
+	if (pbvalue[chan] >= 16383) return;
+	pbvalue[chan] += 1170;
+	if (pbvalue[chan] > 16383) pbvalue[chan] = 16383;
+      } else {
+	if (pbvalue[chan] == 0) return;
+	pbvalue[chan] -= 1170;
+	if (pbvalue[chan] < 0) pbvalue[chan] = 0;
+      }
+      pbval = pbvalue[chan];
+      break;
+    case KJS_SHUTTLE:
+      // make sure that we get a proper center value of 8192
+      pbval = (index-7)*1170;
+      pbval += 8192;
+      break;
+    default:
+      return;
+    }
+    // the result is a 14 bit value which gets encoded as a combination of two
+    // 7 bit values which become the data bytes of the message
+    msg[1] = pbval & 0x7f; // LSB (lower 7 bits)
+    msg[2] = pbval >> 7;   // MSB (upper 7 bits)
+    break;
+  }
+  case 0xc0:
+    // just send the message for KJS_KEY_DOWN and KJS_KEY_UP
+    if (kjs != KJS_KEY_DOWN && kjs != KJS_KEY_UP) return;
+    break;
+  default:
+    return;
+  }
+  queue_midi(&seq, msg);
+}
+
 stroke *
 fetch_stroke(translation *tr, int kjs, int index)
 {
@@ -91,6 +224,7 @@ send_stroke_sequence(translation *tr, int kjs, int index)
 {
   stroke *s;
   char key_name[100];
+  int nkeys = 0;
 
   s = fetch_stroke(tr, kjs, index);
   if (s == NULL) {
@@ -122,10 +256,18 @@ send_stroke_sequence(translation *tr, int kjs, int index)
     }
   }
   while (s) {
-    send_key(s->keysym, s->press);
+    if (s->keysym) {
+      send_key(s->keysym, s->press);
+      nkeys++;
+    } else {
+      send_midi(s->status, s->data, kjs, index);
+    }
     s = s->next;
   }
-  XFlush(display);
+  // no need to flush the display if we didn't send any keys
+  if (nkeys) {
+    XFlush(display);
+  }
 }
 
 void
@@ -354,10 +496,11 @@ handle_event(EV ev)
 
 void help(char *progname)
 {
-  fprintf(stderr, "Usage: %s [-h] [-r rcfile] [-d[rsk]] [device]\n", progname);
+  fprintf(stderr, "Usage: %s [-h] [-j] [-r rcfile] [-d[rsk]] [device]\n", progname);
   fprintf(stderr, "-h print this message\n");
+  fprintf(stderr, "-j enable Jack MIDI output\n");
   fprintf(stderr, "-r config file name (default: SHUTTLE_CONFIG_FILE variable or ~/.shuttlerc)\n");
-  fprintf(stderr, "-d debug (r = regex, s = strokes, k = keys; default: all)\n");
+  fprintf(stderr, "-d debug (r = regex, s = strokes, k = keys, j = jack; default: all)\n");
   fprintf(stderr, "device, if specified, is the name of the shuttle device to open.\n");
   fprintf(stderr, "Otherwise the program will try to find a suitable device on its own.\n");
 }
@@ -374,11 +517,14 @@ main(int argc, char **argv)
   int first_time = 1;
   int opt;
 
-  while ((opt = getopt(argc, argv, "hd::r:")) != -1) {
+  while ((opt = getopt(argc, argv, "hjd::r:")) != -1) {
     switch (opt) {
     case 'h':
       help(argv[0]);
       exit(0);
+    case 'j':
+      enable_jack = 1;
+      break;
     case 'd':
       if (optarg && *optarg) {
 	const char *a = optarg;
@@ -393,8 +539,11 @@ main(int argc, char **argv)
 	  case 'k':
 	    default_debug_keys = 1;
 	    break;
+	  case 'j':
+	    debug_jack = 1;
+	    break;
 	  default:
-	    fprintf(stderr, "%s: unknown debugging option (-d), must be r, s or k\n", argv[0]);
+	    fprintf(stderr, "%s: unknown debugging option (-d), must be r, s, k or j\n", argv[0]);
 	    fprintf(stderr, "Try -h for help.\n");
 	    exit(1);
 	  }
@@ -402,6 +551,7 @@ main(int argc, char **argv)
 	}
       } else {
 	default_debug_regex = default_debug_strokes = default_debug_keys = 1;
+	debug_jack = 1;
       }
       break;
     case 'r':
@@ -437,6 +587,10 @@ main(int argc, char **argv)
   }
 
   initdisplay();
+
+  if (enable_jack) {
+    if (!init_jack(&seq, debug_jack)) enable_jack = 0;
+  }
 
   while (1) {
     fd = open(dev_name, O_RDONLY);

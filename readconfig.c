@@ -64,6 +64,107 @@
   before continuing the sequence.  Keycodes marked with /H remain held
   between the press and release sequences.
 
+  JACK MIDI support (added by aggraef@gmail.com Fri Aug 3 11:01:32 CEST 2018):
+
+  The MIDI output option is useful if you want to be able to send control
+  messages from a Shuttle device to any kind of MIDI-capable program, such as
+  a synthesizer or a DAW. Also, if you put the MIDI translations into the
+  default section of the shuttlerc file, then the target application will
+  be able to receive data from the device no matter which window has the
+  keyboard focus.
+
+  To these ends, add the -j option when invoking the program (also, the -dj
+  option can be used to get verbose output from Jack if needed). This causes a
+  Jack client named "shuttlepro" with a single MIDI output port to be created,
+  and will also start up Jack if it is not already running. Any MIDI messages
+  in the translations will be sent on that port. You can then use any Jack
+  patchbay such as qjackctl to connect the output to any other Jack MIDI
+  client (use the a2jmidid program to connect to non-Jack ALSA MIDI
+  applications).
+
+  Here is the complete list of tokens recognized as MIDI messages, with an
+  explanation of how they work. Note that not all MIDI messages are supported
+  right now (no aftertouch, no system messages), but that subset should be
+  enough to handle most common use cases. (In any case, adding more message
+  types should be a piece of cake.) Also note that bindings can involve as
+  many MIDI messages as you want, and these can be combined freely with
+  keypress events in any order. There's no limitation on the type or number of
+  MIDI messages that you can put into a binding (except that program change
+  and note messages can only be bound to key inputs).
+
+  CCn: Generates a MIDI control change message for controller number n, where
+  n must be in the range 0..127. These can be bound to any kind of input event
+  (key, jog, or shuttle). In the case of jog or shuttle, the controller value
+  will correspond to the jog/shuttle position, clamped to the 0..127 (single
+  data byte) range. For key input, the control change message will be sent
+  once with a value of 127 when the key is pressed, and then again with a
+  value of 0 when the key is released.
+
+  Example: CC7 generates a MIDI message to change the volume controller
+  (controller #7). You can bind this, e.g., to the jog wheel or a key as
+  follows:
+
+  JL CC7
+  JR CC7
+  K5 CC1
+
+  PB: Generates a MIDI pitch bend message. This works pretty much like a MIDI
+  control change message, but with an extended range of 0..16383, where 8192
+  denotes the center value. Obviously, this message is best bound to the
+  shuttle (albeit with a resolution limited to 14 steps), but it also works
+  with the jog wheel (with each tick representing 1/128th of the full pitch
+  bend range) and even key input (in this case, 8192 is used as the "off"
+  value, so the pitch only bends up, never down).
+
+  Example: Just PB generates a pitch bend message. You usually want to bind
+  this to the shuttle (in incremental mode), so the corresponding translations
+  would normally look like this:
+
+  IL PB
+  IR PB
+
+  PCn: This generates a MIDI program change message for the given program
+  number n, which must be in the 0..127 range. This type of message only works
+  with key input, it will be ignored in jog and shuttle assignments. Also, by
+  default the PC message is generated only at the time the key is pressed. To
+  have another PC message generated at key release time, it must be put
+  explicitly into the RELEASE part of the key binding.
+
+  Example: The following will output a change to program 5 when K5 is pressed,
+  and another change to program 0 when the key is released (note that if you
+  leaved away the "RELEASE PC0" part, then only the PC5 will be output when
+  pressing the key, nothing happens when the key is released):
+
+  K5 PC5 RELEASE PC0
+
+  C0..G10 (MIDI notes): This uses the customary MIDI note names, consisting of
+  the letters A..G (denoting the seven white keys in an octave, in either
+  upper- or lowercase), optionally followed by b or # (denoting accidentals,
+  flat and sharp), and terminated with an octave number (0..10). Middle C is
+  denoted C5. Like PC messages, these can only be bound to key inputs; they
+  will be ignored when used with jog or shuttle. The note starts (sending a
+  note on MIDI message) when pressing the key, and finishes (sending the
+  corresponding note off message) when releasing the key.
+
+  Example: The following binds key K6 to a C-7 chord in the middle octave:
+
+  K6 C5 E5 G5 Bb5
+
+  CHk: This doesn't actually output any MIDI message, but merely changes the
+  MIDI channel for all subsequent MIDI messages. k denotes the MIDI channel,
+  which must be in the range 1..16. By default (if the CH command isn't used),
+  MIDI messages will be sent on MIDI channel 1.
+
+  Example: CH10 C3 outputs the note C3 (MIDI note 36) on MIDI channel 10
+  (usually the drum channel). Here's how you can assign keys K5..K9 to play a
+  little drumkit:
+
+  K5 CH10 B2
+  K6 CH10 C3
+  K7 CH10 C#3
+  K8 CH10 D3
+  K9 CH10 D#3
+
  */
 
 #include "shuttle.h"
@@ -373,18 +474,41 @@ KeySym_to_string(KeySym ks)
   return NULL;
 }
 
+static char *note_names[] = { "C", "C#", "D", "Eb", "E", "F", "F#", "G", "G#", "A", "Bb", "B" };
+
 void
 print_stroke(stroke *s)
 {
   char *str;
 
   if (s != NULL) {
-    str = KeySym_to_string(s->keysym);
-    if (str == NULL) {
-      printf("0x%x", (int)s->keysym);
-      str = "???";
+    if (s->keysym) {
+      str = KeySym_to_string(s->keysym);
+      if (str == NULL) {
+	printf("0x%x", (int)s->keysym);
+	str = "???";
+      }
+      printf("%s/%c ", str, s->press ? 'D' : 'U');
+    } else {
+      int status = s->status & 0xf0;
+      int channel = (s->status & 0x0f) + 1;
+      switch (status) {
+      case 0x90:
+	printf("%s%d[%d] ", note_names[s->data % 12], s->data / 12, channel);
+	break;
+      case 0xb0:
+	printf("CC%d[%d] ", s->data, channel);
+	break;
+      case 0xc0:
+	printf("PC%d[%d] ", s->data, channel);
+	break;
+      case 0xe0:
+	printf("PB[%d] ", channel);
+	break;
+      default: // this can't happen
+	break;
+      }
     }
-    printf("%s/%c ", str, s->press ? 'D' : 'U');
   }
 }
 
@@ -404,6 +528,7 @@ stroke *last_stroke;
 stroke **press_first_stroke;
 stroke **release_first_stroke;
 int is_keystroke;
+int is_midi;
 char *current_translation;
 char *key_name;
 int first_release_stroke; // is this the first stroke of a release?
@@ -414,6 +539,8 @@ KeySym regular_key_down;
 stroke modifiers_down[NUM_MODIFIERS];
 int modifier_count;
 
+int midi_channel;
+
 void
 append_stroke(KeySym sym, int press)
 {
@@ -422,12 +549,36 @@ append_stroke(KeySym sym, int press)
   s->next = NULL;
   s->keysym = sym;
   s->press = press;
+  s->status = s->data = s->dirty = 0;
   if (*first_stroke) {
     last_stroke->next = s;
   } else {
     *first_stroke = s;
   }
   last_stroke = s;
+}
+
+void
+append_midi(int status, int data)
+{
+  stroke *s = (stroke *)allocate(sizeof(stroke));
+
+  s->next = NULL;
+  s->keysym = 0;
+  s->press = 0;
+  s->status = status;
+  s->data = data;
+  // if this is a keystroke event, for all messages but program change (which
+  // has no "on" and "off" states), mark the event as "dirty" so that the
+  // corresponding "off" event gets added later to the "release" strokes
+  s->dirty = is_keystroke && ((status&0xf0) != 0xc0);
+  if (*first_stroke) {
+    last_stroke->next = s;
+  } else {
+    *first_stroke = s;
+  }
+  last_stroke = s;
+  is_midi = 1;
 }
 
 // s->press values in modifiers_down:
@@ -513,10 +664,11 @@ start_translation(translation *tr, char *which_key)
   }
   current_translation = tr->name;
   key_name = which_key;
-  is_keystroke = 0;
+  is_keystroke = is_midi = 0;
   first_release_stroke = 0;
   regular_key_down = 0;
   modifier_count = 0;
+  midi_channel = 0;
   if (tolower(which_key[0]) == 'j' &&
       (tolower(which_key[1]) == 'l' || tolower(which_key[1]) == 'r') &&
       which_key[2] == '\0') {
@@ -610,6 +762,18 @@ add_release(int all_keys)
   release_modifiers(all_keys);
   if (!all_keys) {
     first_stroke = release_first_stroke;
+    if (is_midi) {
+      // walk the list of "press" strokes, find all "dirty" (as yet unhandled)
+      // MIDI events in there and add them to the "release" strokes
+      stroke *s = *press_first_stroke;
+      while (s) {
+	if (!s->keysym && s->dirty) {
+	  append_midi(s->status, s->data);
+	  s->dirty = 0;
+	}
+	s = s->next;
+      }
+    }
   }
   if (regular_key_down != 0) {
     append_stroke(regular_key_down, 0);
@@ -643,6 +807,68 @@ add_string(char *str)
       add_keysym((KeySym)(*str), PRESS_RELEASE);
     }
     str++;
+  }
+}
+
+static int note_number(char c, char b, int k)
+{
+  c = tolower(c); b = tolower(b);
+  if (c < 'a' || c > 'g' || (b && b != '#' && b != 'b'))
+    return -1; // either wrong note name or invalid accidental
+  else {
+    static int note_numbers[] = { -3, -1, 0, 2, 4, 5, 7 };
+    int m = note_numbers[c-'a'], a = (b=='#')?1:(b=='b')?-1:0;
+    if (m<0) k++;
+    return m + a + 12*k;
+  }
+}
+
+void
+add_midi(char *tok)
+{
+  int n = 0, k = 0;
+  if (tolower(tok[0]) == 'c' && tolower(tok[1]) == 'h') {
+    // this doesn't actually generate na stroke, it just changes the MIDI
+    // channel
+    sscanf(tok+2, "%d%n", &k, &n);
+    if (n != (int)strlen(tok+2) || k < 1 || k > 16)
+      fprintf(stderr, "bad MIDI channel: %s\n", tok);
+    else
+      midi_channel = k-1;
+  } else if (tolower(tok[0]) == 'p' && tolower(tok[1]) == 'c') {
+    // PC = MIDI program change
+    sscanf(tok+2, "%d%n", &k, &n);
+    if (n != (int)strlen(tok+2) || k < 0 || k > 127)
+      fprintf(stderr, "bad MIDI message: %s\n", tok);
+    else
+      append_midi(0xc0 | midi_channel, k);
+  } else if (tolower(tok[0]) == 'p' && tolower(tok[1]) == 'b') {
+    // PB = MIDI pitch bend
+    if (tok[2])
+      fprintf(stderr, "bad MIDI message: %s\n", tok);
+    else
+      append_midi(0xe0 | midi_channel, 0);
+  } else if (tolower(tok[0]) == 'c' && tolower(tok[1]) == 'c') {
+    // CC = MIDI control change
+    sscanf(tok+2, "%d%n", &k, &n);
+    if (n != (int)strlen(tok+2) || k < 0 || k > 127)
+      fprintf(stderr, "bad MIDI message: %s\n", tok);
+    else
+      append_midi(0xb0 | midi_channel, k);
+  } else {
+    // Parse a MIDI note in the format: %c[%c]%d, where the first character is
+    // the note name ('a' thru 'g'), the optional 2nd character is an
+    // accidental (either '#' or 'b') and the following number is the MIDI
+    // octave number (ranging from 0 to 11, C5 is middle C).
+    char c = 0, b = 0;
+    int m = 0;
+    sscanf(tok, "%c%d%n", &c, &k, &n);
+    if (n != (int)strlen(tok))
+      sscanf(tok, "%c%c%d%n", &c, &b, &k, &n);
+    if (n != (int)strlen(tok) || (m = note_number(c, b, k)) < 0 || m > 127)
+      fprintf(stderr, "bad MIDI message: %s\n", tok);
+    else
+      append_midi(0x90 | midi_channel, m);
   }
 }
 
@@ -779,7 +1005,10 @@ read_config_file(void)
 	case ' ':
 	case '\t':
 	case '\n':
-	  add_keystroke(tok, PRESS_RELEASE);
+	  if (strncmp(tok, "XK", 2) && strncmp(tok, "RELEASE", 8))
+	    add_midi(tok);
+	  else
+	    add_keystroke(tok, PRESS_RELEASE);
 	  break;
 	case '"':
 	  add_string(tok);
