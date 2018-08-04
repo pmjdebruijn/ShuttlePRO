@@ -1,22 +1,18 @@
 
 Copyright 2013 Eric Messick (FixedImagePhoto.com/Contact)
-Copyright 2018 Albert Graef <aggraef at gmail.com> (MIDI support and
-other improvements)
 
 This is a user program for interpreting key, shuttle, and jog events
-from a Contour Design ShuttlePRO v2.  It translates these events into X
-keystrokes, mouse button presses, scroll wheel events, or MIDI output.
-It was originally developed and tested on kubuntu 12.10, but works fine
-on recent Linux distributions, including Arch.
+from a Contour Design ShuttlePRO v2.  It translates these events into
+X keystrokes, mouse button presses, or scroll wheel events.  It was
+developed and tested on kubuntu 12.10.
 
 ShuttlePRO events can generate sequences of multiple keystrokes,
-including the pressing and releasing of modifier keys.  In addition,
-MIDI messages can be generated and output using Jack MIDI.  The binding
+including the pressing and releasing of modifier keys.  The binding
 can be selected based on the title of the window which is focused.
 
 Build instructions:
 
-# apt-get install build-essential libx11-dev libxtst-dev libjack-dev
+# apt-get install build-essential libx11-dev libxtst-dev
 
 $ make
 
