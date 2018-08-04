@@ -16,7 +16,9 @@
 */
 
 #include "shuttle.h"
+#if HAVE_JACK
 #include "jackdriver.h"
+#endif
 
 typedef struct input_event EV;
 
@@ -29,7 +31,9 @@ struct timeval last_shuttle;
 int need_synthetic_shuttle;
 Display *display;
 
+#if HAVE_JACK
 JACK_SEQ seq;
+#endif
 int enable_jack = 0, debug_jack = 0;
 
 void
@@ -68,6 +72,7 @@ send_key(KeySym key, int press)
   XTestFakeKeyEvent(display, keycode, press ? True : False, DELAY);
 }
 
+#if HAVE_JACK
 // cached controller and pitch bend values
 static int ccvalue[16][128];
 static int pbvalue[16] =
@@ -197,6 +202,7 @@ send_midi(int status, int data, int kjs, int index)
   }
   queue_midi(&seq, msg);
 }
+#endif
 
 stroke *
 fetch_stroke(translation *tr, int kjs, int index)
@@ -259,8 +265,10 @@ send_stroke_sequence(translation *tr, int kjs, int index)
     if (s->keysym) {
       send_key(s->keysym, s->press);
       nkeys++;
+#if HAVE_JACK
     } else {
       send_midi(s->status, s->data, kjs, index);
+#endif
     }
     s = s->next;
   }
@@ -523,7 +531,12 @@ main(int argc, char **argv)
       help(argv[0]);
       exit(0);
     case 'j':
+#if HAVE_JACK
       enable_jack = 1;
+#else
+      fprintf(stderr, "%s: Warning: this version was compiled without Jack support (-j)\n", argv[0]);
+      fprintf(stderr, "Try recompiling the program with Jack installed to enable this option.\n");
+#endif
       break;
     case 'd':
       if (optarg && *optarg) {
@@ -588,9 +601,11 @@ main(int argc, char **argv)
 
   initdisplay();
 
+#if HAVE_JACK
   if (enable_jack) {
     if (!init_jack(&seq, debug_jack)) enable_jack = 0;
   }
+#endif
 
   while (1) {
     fd = open(dev_name, O_RDONLY);
