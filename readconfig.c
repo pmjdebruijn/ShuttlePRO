@@ -68,17 +68,20 @@
 
   The MIDI output option is useful if you want to be able to send control
   messages from a Shuttle device to any kind of MIDI-capable program, such as
-  a synthesizer or a DAW. Also, if you put the MIDI translations into the
-  default section of the shuttlerc file, then the target application will
-  be able to receive data from the device no matter which window has the
-  keyboard focus.
+  a synthesizer or a DAW. Also, if you put the MIDI translations into a
+  special "MIDI" default section of the shuttlerc file, then the target
+  application will be able to receive data from the device no matter which
+  window has the keyboard focus. (This special "MIDI" section will only be
+  active if Jack MIDI support is actually enabled with the -j option, see
+  below. This allows you to have another default section after the MIDI
+  section for non-MIDI operation.)
 
-  To these ends, add the -j option when invoking the program (also, the -dj
-  option can be used to get verbose output from Jack if needed). This causes a
-  Jack client named "shuttlepro" with a single MIDI output port to be created,
-  and will also start up Jack if it is not already running. Any MIDI messages
-  in the translations will be sent on that port. You can then use any Jack
-  patchbay such as qjackctl to connect the output to any other Jack MIDI
+  To enable MIDI output, add the -j option when invoking the program (also,
+  the -dj option can be used to get verbose output from Jack if needed). This
+  causes a Jack client named "shuttlepro" with a single MIDI output port to be
+  created, and will also start up Jack if it is not already running. Any MIDI
+  messages in the translations will be sent on that port. You can then use any
+  Jack patchbay such as qjackctl to connect the output to any other Jack MIDI
   client (use the a2jmidid program to connect to non-Jack ALSA MIDI
   applications).
 
@@ -1051,17 +1054,20 @@ get_translation(char *win_title, char *win_class)
   read_config_file();
   tr = first_translation_section;
   while (tr != NULL) {
-    if (tr->is_default) {
+    extern int enable_jack;
+    if (tr->is_default &&
+	(strcmp(tr->name, "MIDI") || enable_jack)) {
       return tr;
-    }
-    // AG: We first try to match the class name, since it usually provides
-    // better identification clues.
-    if (win_class && *win_class &&
-	regexec(&tr->regex, win_class, 0, NULL, 0) == 0) {
-      return tr;
-    }
-    if (regexec(&tr->regex, win_title, 0, NULL, 0) == 0) {
-      return tr;
+    } else if (!tr->is_default) {
+      // AG: We first try to match the class name, since it usually provides
+      // better identification clues.
+      if (win_class && *win_class &&
+	  regexec(&tr->regex, win_class, 0, NULL, 0) == 0) {
+	return tr;
+      }
+      if (regexec(&tr->regex, win_title, 0, NULL, 0) == 0) {
+	return tr;
+      }
     }
     tr = tr->next;
   }
