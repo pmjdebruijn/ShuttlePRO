@@ -4,7 +4,8 @@
 #CFLAGS=-g -W -Wall
 CFLAGS=-O3 -W -Wall
 
-INSTALL_DIR=/usr/local/bin
+prefix=/usr/local
+INSTALL_DIR=$(DESTDIR)$(prefix)/bin
 
 # Check to see whether we have Jack installed. Needs pkg-config.
 JACK := $(shell pkg-config --libs jack 2>/dev/null)
@@ -21,7 +22,8 @@ OBJ = readconfig.o shuttlepro.o $(JACK_OBJ)
 all: shuttlepro
 
 install: all
-	install shuttle shuttlepro ${INSTALL_DIR}
+	install -d ${INSTALL_DIR}
+	install shuttlepro ${INSTALL_DIR}
 
 shuttlepro: ${OBJ}
 	gcc ${CFLAGS} ${OBJ} -o shuttlepro -L /usr/X11R6/lib -lX11 -lXtst $(JACK)
