@@ -680,15 +680,23 @@ read_config_file(void)
   char delim;
   translation *tr = NULL;
   FILE *f;
+  int config_file_default = 0;
 
   if (config_file_name == NULL) {
     config_file_name = getenv("SHUTTLE_CONFIG_FILE");
     if (config_file_name == NULL) {
       home = getenv("HOME");
       config_file_name = alloc_strcat(home, "/.shuttlerc");
+      config_file_default = 1;
     } else {
       config_file_name = alloc_strcat(config_file_name, NULL);
     }
+    config_file_modification_time = 0;
+  }
+  if (stat(config_file_name, &buf) < 0) {
+    // AG: Fall back to the system-wide configuration file.
+    if (!config_file_default) perror(config_file_name);
+    config_file_name = "/etc/shuttlerc";
     config_file_modification_time = 0;
   }
   if (stat(config_file_name, &buf) < 0) {
@@ -700,6 +708,9 @@ read_config_file(void)
   }
   if (buf.st_mtime > config_file_modification_time) {
     config_file_modification_time = buf.st_mtime;
+    if (default_debug_regex || default_debug_strokes || default_debug_keys) {
+      printf("Loading configuration: %s\n", config_file_name);
+    }
 
     f = fopen(config_file_name, "r");
     if (f == NULL) {
