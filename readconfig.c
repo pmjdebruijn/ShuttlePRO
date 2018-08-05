@@ -154,9 +154,9 @@
   K6 C5 E5 G5 Bb5
 
   CHk: This doesn't actually output any MIDI message, but merely changes the
-  MIDI channel for all subsequent MIDI messages. k denotes the MIDI channel,
-  which must be in the range 1..16. By default (if the CH command isn't used),
-  MIDI messages will be sent on MIDI channel 1.
+  default MIDI channel for all subsequent MIDI messages. k denotes the MIDI
+  channel, which must be in the range 1..16. By default (if the CH command
+  isn't used), MIDI messages will be sent on MIDI channel 1.
 
   Example: CH10 C3 outputs the note C3 (MIDI note 36) on MIDI channel 10
   (usually the drum channel). Here's how you can assign keys K5..K9 to play a
@@ -167,6 +167,20 @@
   K7 CH10 C#3
   K8 CH10 D3
   K9 CH10 D#3
+
+  Instead of using "CH", you can also specify the MIDI channel of a single
+  message directly as a suffix, separating message and channel number with a
+  dash, like so:
+
+  K5 B2-10
+  K6 C3-10
+  K7 C#3-10
+  K8 D3-10
+  K9 D#3-10
+
+  This is also the format used when printing MIDI messages in translations.
+  Note that the MIDI channel suffix only applies to a single message, other
+  messages without a suffix will still use the default MIDI channel.
 
  */
 
@@ -497,16 +511,16 @@ print_stroke(stroke *s)
       int channel = (s->status & 0x0f) + 1;
       switch (status) {
       case 0x90:
-	printf("%s%d[%d] ", note_names[s->data % 12], s->data / 12, channel);
+	printf("%s%d-%d ", note_names[s->data % 12], s->data / 12, channel);
 	break;
       case 0xb0:
-	printf("CC%d[%d] ", s->data, channel);
+	printf("CC%d-%d ", s->data, channel);
 	break;
       case 0xc0:
-	printf("PC%d[%d] ", s->data, channel);
+	printf("PC%d-%d ", s->data, channel);
 	break;
       case 0xe0:
-	printf("PB[%d] ", channel);
+	printf("PB-%d ", channel);
 	break;
       default: // this can't happen
 	break;
@@ -813,6 +827,21 @@ add_string(char *str)
   }
 }
 
+/* Parser for the MIDI message syntax. The syntax we actually parse here is:
+
+   tok  ::= ( note | msg ) [number] [ "-" number]
+   note ::= ( "a" | ... | "g" ) [ "#" | "b" ]
+   msg  ::= "ch" | "pb" | "pc" | "cc"
+
+   Numbers are always in decimal. The meaning of the first number depends on
+   the context (octave number for notes, the actual data byte for other
+   messages). If present, the suffix with the second number (after the dash)
+   denotes the MIDI channel, otherwise the default MIDI channel is used. Note
+   that not all combinations are possible -- "pb" is *not* followed by a data
+   byte, and "ch" may *not* have a channel number suffix on it. (In fact, "ch"
+   is no real MIDI message at all; it just sets the default MIDI channel for
+   subsequent messages.) */
+
 static int note_number(char c, char b, int k)
 {
   c = tolower(c); b = tolower(b);
@@ -826,52 +855,90 @@ static int note_number(char c, char b, int k)
   }
 }
 
+int
+parse_midi(char *tok, char *s, int *status, int *data)
+{
+  char *p = tok, *t;
+  int n, m = -1, k = midi_channel;
+  s[0] = 0;
+  while (*p && !isdigit(*p)) p++;
+  if (p == tok || p-tok > 10) return 0; // no valid token
+  // the token by itself
+  strncpy(s, tok, p-tok); s[p-tok] = 0;
+  // normalize to lowercase
+  for (t = s; *t; t++) *t = tolower(*t);
+  // octave number or data byte (not permitted with 'pb', otherwise required)
+  if (isdigit(*p) && sscanf(p, "%d%n", &m, &n) == 1) {
+    if (strcmp(s, "pb") == 0) return 0;
+    p += n;
+  } else if (strcmp(s, "pb")) {
+    return 0;
+  }
+  if (*p == '-') {
+    // suffix with MIDI channel (not permitted with 'ch')
+    if (strcmp(s, "ch") == 0) return 0;
+    if (sscanf(++p, "%d%n", &k, &n) == 1) {
+      // check that it is a valid channel number
+      if (k < 1 || k > 16) return 0;
+      k--; // actual MIDI channel in the range 0..15
+      p += n;
+    } else {
+      return 0;
+    }
+  }
+  // check for trailing garbage
+  if (*p) return 0;
+  if (strcmp(s, "ch") == 0) {
+    // we return a bogus status of 0 here, along with the MIDI channel in the
+    // data byte; also check that the MIDI channel is in the proper range
+    if (m < 1 || m > 16) return 0;
+    *status = 0; *data = m-1;
+    return 1;
+  } else if (strcmp(s, "pb") == 0) {
+    // pitch bend, no data byte
+    *status = 0xe0 | k; *data = 0;
+    return 1;
+  } else if (strcmp(s, "pc") == 0) {
+    // program change
+    if (m < 0 || m > 127) return 0;
+    *status = 0xc0 | k; *data = m;
+    return 1;
+  } else if (strcmp(s, "cc") == 0) {
+    // control change
+    if (m < 0 || m > 127) return 0;
+    *status = 0xb0 | k; *data = m;
+    return 1;
+  } else {
+    // we must be looking at a MIDI note here, with m denoting the octave
+    // number; first character is the note name (must be a..g); optionally,
+    // the second character may denote an accidental (# or b)
+    n = note_number(s[0], s[1], m);
+    if (n < 0 || n > 127) return 0;
+    *status = 0x90 | k; *data = n;
+    return 1;
+  }
+}
+
 void
 add_midi(char *tok)
 {
-  int n = 0, k = 0;
-  if (tolower(tok[0]) == 'c' && tolower(tok[1]) == 'h') {
-    // this doesn't actually generate na stroke, it just changes the MIDI
-    // channel
-    sscanf(tok+2, "%d%n", &k, &n);
-    if (n != (int)strlen(tok+2) || k < 1 || k > 16)
-      fprintf(stderr, "bad MIDI channel: %s\n", tok);
-    else
-      midi_channel = k-1;
-  } else if (tolower(tok[0]) == 'p' && tolower(tok[1]) == 'c') {
-    // PC = MIDI program change
-    sscanf(tok+2, "%d%n", &k, &n);
-    if (n != (int)strlen(tok+2) || k < 0 || k > 127)
-      fprintf(stderr, "bad MIDI message: %s\n", tok);
-    else
-      append_midi(0xc0 | midi_channel, k);
-  } else if (tolower(tok[0]) == 'p' && tolower(tok[1]) == 'b') {
-    // PB = MIDI pitch bend
-    if (tok[2])
-      fprintf(stderr, "bad MIDI message: %s\n", tok);
-    else
-      append_midi(0xe0 | midi_channel, 0);
-  } else if (tolower(tok[0]) == 'c' && tolower(tok[1]) == 'c') {
-    // CC = MIDI control change
-    sscanf(tok+2, "%d%n", &k, &n);
-    if (n != (int)strlen(tok+2) || k < 0 || k > 127)
-      fprintf(stderr, "bad MIDI message: %s\n", tok);
-    else
-      append_midi(0xb0 | midi_channel, k);
+  int status, data;
+  char buf[100];
+  if (parse_midi(tok, buf, &status, &data)) {
+    if (status == 0) {
+      // 'ch' token; this doesn't actually generate any output, it just sets
+      // the default MIDI channel
+      midi_channel = data;
+    } else {
+      append_midi(status, data);
+    }
   } else {
-    // Parse a MIDI note in the format: %c[%c]%d, where the first character is
-    // the note name ('a' thru 'g'), the optional 2nd character is an
-    // accidental (either '#' or 'b') and the following number is the MIDI
-    // octave number (ranging from 0 to 11, C5 is middle C).
-    char c = 0, b = 0;
-    int m = 0;
-    sscanf(tok, "%c%d%n", &c, &k, &n);
-    if (n != (int)strlen(tok))
-      sscanf(tok, "%c%c%d%n", &c, &b, &k, &n);
-    if (n != (int)strlen(tok) || (m = note_number(c, b, k)) < 0 || m > 127)
+    // inspect the token that was actually recognized (if any) to give some
+    // useful error message here
+    if (strcmp(buf, "ch"))
       fprintf(stderr, "bad MIDI message: %s\n", tok);
     else
-      append_midi(0x90 | midi_channel, m);
+      fprintf(stderr, "bad MIDI channel: %s\n", tok);
   }
 }
 

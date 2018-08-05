@@ -102,7 +102,7 @@
 # Here is a brief rundown of the supported MIDI messages (a more detailed
 # account with examples can be found in readconfig.c):
 
-# CH<1..16>: sets the output channel for subsequent MIDI messages
+# CH<1..16>: sets the default output channel for subsequent MIDI messages
 # CC<0..127>: outputs a control change message for the given controller
 # PC<0..127>: outputs a program change message
 # PB: outputs a pitch bend message
@@ -110,6 +110,12 @@
 # when pressed, note off when released); note names use the customary
 # MIDI notation, with # and b denoting accidentals; the number at the
 # end denotes the MIDI octave in the range 0..10 (C5 is middle C)
+
+# You can also set the MIDI channel of a single message directly as a
+# suffix, separating message and channel number with a dash, e.g.:
+# CC7-10. (This MIDI channel suffix only applies to a single message,
+# other messages without a suffix will still use the default MIDI
+# channel set with CH.)
 
 # PC and note messages can only be bound to key events (they will be
 # ignored otherwise). CC and PB also work with the jog wheel and the
