@@ -80,7 +80,7 @@ static int pbvalue[16] =
    8192, 8192, 8192, 8192, 8192, 8192, 8192, 8192};
 
 void
-send_midi(int status, int data, int kjs, int index)
+send_midi(int status, int data, int incr, int kjs, int index)
 {
   if (!enable_jack) return; // MIDI support not enabled
   uint8_t msg[3];
@@ -111,7 +111,10 @@ send_midi(int status, int data, int kjs, int index)
       // for the jog wheel, increment (index==1) or decrement (index==0) the
       // current value, clamping it to the 0..127 data byte range
     case KJS_JOG:
-      if (index) {
+      if (incr) {
+	// incremental controller, simply spit out a relative sign bit value
+	msg[2] = index?1:65;
+      } else if (index) {
 	if (ccvalue[chan][data] >= 127) return;
 	msg[2] = ++ccvalue[chan][data];
       } else {
@@ -267,7 +270,7 @@ send_stroke_sequence(translation *tr, int kjs, int index)
       nkeys++;
 #if HAVE_JACK
     } else {
-      send_midi(s->status, s->data, kjs, index);
+      send_midi(s->status, s->data, s->incr, kjs, index);
 #endif
     }
     s = s->next;

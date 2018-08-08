@@ -514,7 +514,7 @@ print_stroke(stroke *s)
 	printf("%s%d-%d ", note_names[s->data % 12], s->data / 12, channel);
 	break;
       case 0xb0:
-	printf("CC%d-%d ", s->data, channel);
+	printf("CC%d-%d%s ", s->data, channel, s->incr?"~":"");
 	break;
       case 0xc0:
 	printf("PC%d-%d ", s->data, channel);
@@ -566,7 +566,7 @@ append_stroke(KeySym sym, int press)
   s->next = NULL;
   s->keysym = sym;
   s->press = press;
-  s->status = s->data = s->dirty = 0;
+  s->status = s->data = s->incr = s->dirty = 0;
   if (*first_stroke) {
     last_stroke->next = s;
   } else {
@@ -576,7 +576,7 @@ append_stroke(KeySym sym, int press)
 }
 
 void
-append_midi(int status, int data)
+append_midi(int status, int data, int incr)
 {
   stroke *s = (stroke *)allocate(sizeof(stroke));
 
@@ -585,6 +585,7 @@ append_midi(int status, int data)
   s->press = 0;
   s->status = status;
   s->data = data;
+  s->incr = incr;
   // if this is a keystroke event, for all messages but program change (which
   // has no "on" and "off" states), mark the event as "dirty" so that the
   // corresponding "off" event gets added later to the "release" strokes
@@ -785,7 +786,7 @@ add_release(int all_keys)
       stroke *s = *press_first_stroke;
       while (s) {
 	if (!s->keysym && s->dirty) {
-	  append_midi(s->status, s->data);
+	  append_midi(s->status, s->data, s->incr);
 	  s->dirty = 0;
 	}
 	s = s->next;
@@ -829,17 +830,20 @@ add_string(char *str)
 
 /* Parser for the MIDI message syntax. The syntax we actually parse here is:
 
-   tok  ::= ( note | msg ) [number] [ "-" number]
+   tok  ::= ( note | msg ) [number] [ "-" number] [ "~" ]
    note ::= ( "a" | ... | "g" ) [ "#" | "b" ]
    msg  ::= "ch" | "pb" | "pc" | "cc"
 
    Numbers are always in decimal. The meaning of the first number depends on
    the context (octave number for notes, the actual data byte for other
    messages). If present, the suffix with the second number (after the dash)
-   denotes the MIDI channel, otherwise the default MIDI channel is used. Note
-   that not all combinations are possible -- "pb" is *not* followed by a data
-   byte, and "ch" may *not* have a channel number suffix on it. (In fact, "ch"
-   is no real MIDI message at all; it just sets the default MIDI channel for
+   denotes the MIDI channel, otherwise the default MIDI channel is used. Also,
+   for "cc" messages the "~" suffix denotes a special kind of "incremental"
+   (endless rotary) control whose values are encoded as relative changes in
+   "sign bit format". Note that not all combinations are possible -- "pb" is
+   *not* followed by a data byte, only "cc" may have the "~" suffix on it, and
+   "ch" may *not* have a channel number suffix on it. (In fact, "ch" is no
+   real MIDI message at all; it just sets the default MIDI channel for
    subsequent messages.) */
 
 static int note_number(char c, char b, int k)
@@ -856,7 +860,7 @@ static int note_number(char c, char b, int k)
 }
 
 int
-parse_midi(char *tok, char *s, int *status, int *data)
+parse_midi(char *tok, char *s, int *status, int *data, int *incr)
 {
   char *p = tok, *t;
   int n, m = -1, k = midi_channel;
@@ -885,6 +889,14 @@ parse_midi(char *tok, char *s, int *status, int *data)
     } else {
       return 0;
     }
+  }
+  if (*p == '~') {
+    // incremental bit (only valid for 'cc')
+    if (strcmp(s, "cc")) return 0;
+    *incr = 1;
+    p++;
+  } else {
+    *incr = 0;
   }
   // check for trailing garbage
   if (*p) return 0;
@@ -922,15 +934,15 @@ parse_midi(char *tok, char *s, int *status, int *data)
 void
 add_midi(char *tok)
 {
-  int status, data;
+  int status, data, incr;
   char buf[100];
-  if (parse_midi(tok, buf, &status, &data)) {
+  if (parse_midi(tok, buf, &status, &data, &incr)) {
     if (status == 0) {
       // 'ch' token; this doesn't actually generate any output, it just sets
       // the default MIDI channel
       midi_channel = data;
     } else {
-      append_midi(status, data);
+      append_midi(status, data, incr);
     }
   } else {
     // inspect the token that was actually recognized (if any) to give some

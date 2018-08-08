@@ -78,6 +78,9 @@ typedef struct _stroke {
   int press; // zero -> release, non-zero -> press
   // keysym == 0 => MIDI event
   int status, data; // status and, if applicable, first data byte
+  // the incremental bit indicates an incremental control change (typically
+  // used with endless rotary encoders) to be represented as a sign bit value
+  int incr;
   // the dirty bit indicates a MIDI event for which a release event still
   // needs to be generated in key events
   int dirty;
