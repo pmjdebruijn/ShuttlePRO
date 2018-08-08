@@ -504,7 +504,7 @@ handle_event(EV ev)
 
 void help(char *progname)
 {
-  fprintf(stderr, "Usage: %s [-h] [-j] [-r rcfile] [-d[rsk]] [device]\n", progname);
+  fprintf(stderr, "Usage: %s [-h] [-j] [-r rcfile] [-d[rskj]] [device]\n", progname);
   fprintf(stderr, "-h print this message\n");
   fprintf(stderr, "-j enable Jack MIDI output\n");
   fprintf(stderr, "-r config file name (default: SHUTTLE_CONFIG_FILE variable or ~/.shuttlerc)\n");
