@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <stdint.h>
 #include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
@@ -80,10 +81,10 @@ typedef struct _stroke {
   int status, data; // status and, if applicable, first data byte
   // the incremental bit indicates an incremental control change (typically
   // used with endless rotary encoders) to be represented as a sign bit value
-  int incr;
+  uint8_t incr;
   // the dirty bit indicates a MIDI event for which a release event still
   // needs to be generated in key events
-  int dirty;
+  uint8_t dirty;
 } stroke;
 
 #define KJS_KEY_DOWN 1
