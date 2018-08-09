@@ -104,12 +104,23 @@
   value of 0 when the key is released.
 
   Example: CC7 generates a MIDI message to change the volume controller
-  (controller #7). You can bind this, e.g., to the jog wheel or a key as
-  follows:
+  (controller #7), while CC1 changes the modulation wheel (controller #1,
+  usually some kind of vibrato effect). You can bind these, e.g., to the jog
+  wheel or a key as follows:
 
   JL CC7
   JR CC7
   K5 CC1
+
+  When used with the jog wheel, you can also generate relative control changes
+  in a special "sign bit" format which is commonly used for endless rotary
+  controllers. In this case, a +1 change is represented by the controller
+  value 1, and a -1 change by 65 (a 1 with the sign in the 7th bit). This
+  special mode of operation is indicated with a trailing tilde. E.g., here's
+  how to bind an MCU-style jog wheel (CC60) event to the Shuttle's jog wheel:
+
+  JL CC60~
+  JR CC60~
 
   PB: Generates a MIDI pitch bend message. This works pretty much like a MIDI
   control change message, but with an extended range of 0..16383, where 8192
