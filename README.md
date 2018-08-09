@@ -101,28 +101,23 @@ We recommend using a Jack front-end and patchbay program like [QjackCtl][] to ma
 [QjackCtl]: https://qjackctl.sourceforge.io/
 [a2jmidid]: http://repo.or.cz/a2jmidid.git
 
-The example.shuttlerc file comes with a sample configuration in the `[MIDI]` section for illustration purposes. You can try it and test that it works by running `shuttlepro -j`, firing up a MIDI synthesizer such as [FluidSynth][] or its graphical front-end [Qsynth][], and connecting the two. In the sample configuration, the buttons `K5` .. `K9` have been set up so that they play some MIDI notes, and the jog wheel can be used as a MIDI volume controller (`CC7`). The configuration entry looks as follows:
+The example.shuttlerc file comes with a sample configuration in the `[MIDI]` section for illustration purposes. This special default section is only active if the program is run with the `-j` option. It allows MIDI output to be sent to any connected applications, no matter which window currently has the keyboard focus. This is probably the most common way to use this feature, but of course it is also possible to have application-specific MIDI translations, in the same way as with X11 key bindings. In fact, you can freely mix mouse actions, key presses and MIDI messages in all translations.
 
-[FluidSynth]: http://www.fluidsynth.org/
-[Qsynth]: https://qsynth.sourceforge.io/
+The sample `[MIDI]` section implements a simplistic DAW controller which can be used as a (rather rudimentary) Mackie control surface, e.g., with Ardour. The buttons `K5` .. `K9` are mapped to the playback controls (Rewind, Stop, Play, Record, Fast Forward), and the jog wheel emulates the MCU jog wheel (`CC60`). The configuration entry looks as follows:
 
 ~~~
 [MIDI]
 
- K5 CH10 B2
- K6 CH10 C3
- K7 CH10 C#3
- K8 CH10 D3
- K9 CH10 D#3
+ K5 G7  # Rewind
+ K6 A7  # Stop
+ K7 A#7 # Play
+ K8 B7  # Record
+ K9 G#7 # Fast Forward
 
- JL CH10 CC7
- JR CH10 CC7
+ JL CC60~
+ JR CC60~
 ~~~
 
-**NOTE:** The special `[MIDI]` default section being used here will only be active if the program is run with the `-j` option. This allows MIDI output to be sent to any connected applications, no matter which window currently has the keyboard focus. This is probably the most common way to use this feature, but of course it is also possible to have application-specific MIDI translations, in the same way as with X11 key bindings. In fact, you can freely mix mouse actions, key presses and MIDI messages in all translations.
+(Note the `CC60~` event in the jog wheel translations. The `~` suffix indicates that `CC60` is to be treated as an endless rotary encoder which represents relative changes of the jog wheel value in a special "sign bit" format, see the readconfig.c file for details.)
 
-The `CH10` tokens in the entry above merely specify that output should go to MIDI channel 10 (the drum channel), they do not output any MIDI messages by themselves. The actual MIDI notes to be played follow. E.g., `C3`, which is bound to button `K6`, is the note C in the third MIDI octave, which on channel 10 will produce the sound of a bass drum, at least on GM (General MIDI) compatible synthesizers like Fluidsynth. The bindings for the jog wheel at the end of the entry send control changes for controller 7 (`CC7`), which is the MIDI volume controller, so by turning the jog wheel you can dial in the volume that you want in this example -- turning the jog wheel to the right increases the volume, while turning it to the left decreases it.
-
-The program keeps track of both the jog wheel position and the current controller values on all MIDI channels internally, so all that happens automagically. The shuttle (the rubber wheel surrounding the jog wheel) can be handled in a similar manner, using `IL` and `IR` in lieu of `JL` and `JR`. This can be put to good use, for instance, with MIDI pitch bends (`PB`), because the shuttle will automatically snap back to the center position, and thus works exactly like the pitch wheel available on most MIDI keyboards.
-
-Besides MIDI notes, pitch bends and control change messages, the `shuttlepro` program also supports sending program change (`PC`) messages in response to button presses, which may be useful to change scenes or presets in some applications. Other messages (in particular, aftertouch and system messages) are not supported right now, but may be added in the future. Again, please refer to the example.shuttlerc file and the beginning of readconfig.c for further details.
+To try it, run `shuttlepro -j`, fire up Ardour, and configure a Mackie control surface in Ardour which takes input from the MIDI output of the `shuttlepro` client. The playback controls and the jog wheel should then work exactly like a real Mackie-like MIDI controller connected directly to Ardour.
