@@ -228,25 +228,21 @@
 
 [MIDI]
 
-# This is just a little drumkit example.  You need to hook up the
-# shuttlepro MIDI output to a GM-compatible MIDI synthesizer like
-# Fluidsynth to get sound.
+# Poor man's MCU. This emulates a Mackie-compatible device with playback
+# controls and a jog wheel. You can use this as a (rather rudimentary)
+# Mackie control surface, e.g., with Ardour.
 
-# CH 10 switches to MIDI channel 10, the drumkit channel.  Keys K5..K9
-# are used to play MIDI notes B2..D#3 here, which should give you some
-# drum sounds.
+ K5 G7  # Rewind
+ K6 A7  # Stop
+ K7 A#7 # Play
+ K8 B7  # Record
+ K9 G#7 # Fast Forward
 
- K5 CH10 B2
- K6 CH10 C3
- K7 CH10 C#3
- K8 CH10 D3
- K9 CH10 D#3
+# The Mackie jog wheel is CC60, but it uses a special kind of encoding
+# of relative controller values, indicated with the ~ suffix.
 
-# Also, for illustration, we assign the jog wheel to CC7 which lets you
-# control the volume.
-
- JL CH10 CC7
- JR CH10 CC7
+ JL CC60~
+ JR CC60~
 
 
 # Default (mouse emulation)
