@@ -43,7 +43,9 @@ keys.h: keys.sed /usr/include/X11/keysymdef.h
 	sed -f keys.sed < /usr/include/X11/keysymdef.h > keys.h
 
 readconfig.o: shuttle.h keys.h
-shuttlepro.o: shuttle.h
 ifneq ($(JACK),)
 jackdriver.o: jackdriver.h
+shuttlepro.o: shuttle.h jackdriver.h
+else
+shuttlepro.o: shuttle.h
 endif
