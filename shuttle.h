@@ -110,4 +110,5 @@ extern translation *get_translation(char *win_title, char *win_class);
 extern void print_stroke_sequence(char *name, char *up_or_down, stroke *s);
 extern int debug_regex, debug_strokes, debug_keys;
 extern int default_debug_regex, default_debug_strokes, default_debug_keys;
+extern int midi_octave;
 extern char *config_file_name;

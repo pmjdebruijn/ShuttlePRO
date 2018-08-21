@@ -116,6 +116,14 @@ The ~/.shuttlerc file, if it exists, takes priority over /etc/shuttlerc,
 so it becomes your personal shuttlepro configuration.
 You can edit this file as you see fit, in order to customize the
 configuration for the applications that you use.
+.PP
+\f[B]NOTE:\f[] The program re\-reads its configuration file whenever it
+notices that the file has been changed.
+However, in the current implementation this check is only done when an
+input event arrives after the keyboard focus changed to a new window.
+Thus you can edit the file while the program keeps running, but you'll
+have to switch windows \f[I]and\f[] operate the device to have the
+changes take effect.
 .SH Usage
 .PP
 The shuttlepro program is a command line application, so you typically
@@ -245,8 +253,8 @@ This is useful if you want to hook up the device to any kind of
 MIDI\-capable program, such as software synthesizers or a digital audio
 workstation (DAW) program like Ardour (https://ardour.org/).
 .PP
-You need to run the program it as \f[C]shuttlepro\ \-o\f[] to enable
-MIDI output at run time.
+You need to run the program as \f[C]shuttlepro\ \-o\f[] to enable MIDI
+output at run time.
 This will start up Jack (if it is not already running) and create a Jack
 client named \f[C]shuttlepro\f[] with a single MIDI output port which
 can then be connected to the MIDI inputs of other programs.
@@ -575,7 +583,8 @@ Note messages are specified using the customary notation (note name
 \f[C]b\f[], followed by the MIDI octave number.
 Note that all MIDI octaves start at the note C, so \f[C]B0\f[] comes
 before \f[C]C1\f[].
-By default, \f[C]C5\f[] denotes middle C.
+By default, \f[C]C5\f[] denotes middle C (see Section \f[I]Octave
+Numbering\f[] below on how to change this).
 Enharmonic spellings are equivalent, so, e.g., \f[C]D#\f[] and
 \f[C]Eb\f[] denote exactly the same MIDI note.
 .PP
@@ -664,14 +673,14 @@ K5\ PC5\ RELEASE\ PC0
 \f[]
 .fi
 .PP
-\f[B]C0..G10 (MIDI notes):\f[] Like \f[C]PC\f[] messages, these are most
-useful when bound to key inputs.
+\f[B]MIDI notes:\f[] Like \f[C]PC\f[] messages, these are most useful
+when bound to key inputs.
 The note starts (sending a note on MIDI message with maximum velocity)
 when pressing the key, and finishes (sending the corresponding note off
 message) when releasing the key.
 In jog and shuttle assignments, a pair of note on and note off messages
 is generated (again, this probably isn't very useful unless you bind it
-to a specific shuttle wheel position).
+to the shuttle wheel).
 .PP
 \f[B]Example:\f[] The following binds key K6 to a C\-7 chord in the
 middle octave:
@@ -681,15 +690,41 @@ middle octave:
 K6\ C5\ E5\ G5\ Bb5
 \f[]
 .fi
-.SH Bugs
+.SS Octave Numbering
 .PP
-The program re\-reads its configuration file whenever it notices that
-the file has been changed.
-However, in the current implementation this check is only done when an
-input event arrives after the keyboard focus changed to a new window.
-Thus you can edit the file while the program keeps running, but you'll
-have to switch windows \f[I]and\f[] operate the device to have the
-changes take effect.
+A note on the octave numbers in MIDI note designations is in order here.
+There are various different standards for numbering octaves, and
+different programs use different standards, which can be rather
+confusing.
+E.g., there's the ASA (Acoustical Society of America) standard where
+middle C is C4, also known as \[lq]scientific\[rq] or \[lq]American
+standard\[rq] pitch notation.
+At least two other standards exist specifically for MIDI octave
+numbering, one in which middle C is C3 (so the lowest MIDI octave starts
+at C\-2), and zero\-based octave numbers, which start at C0 and have
+middle C at C5.
+There's not really a single \[lq]best\[rq] standard here, but the latter
+tends to appeal to mathematically inclined and computer\-savvy people,
+and is also what is used by default in the shuttlerc file.
+.PP
+However, you may want to change this, e.g., if you're working with
+documentation or MIDI monitoring software which uses a different
+numbering scheme.
+To do this, just specify the desired offset for the lowest MIDI octave
+with the special \f[C]MIDI_OCTAVE\f[] directive in the configuration
+file.
+For instance:
+.IP
+.nf
+\f[C]
+MIDI_OCTAVE\ \-1\ #\ ASA\ pitches\ (middle\ C\ is\ C4)
+\f[]
+.fi
+.PP
+Note that this transposes \f[I]all\f[] existing notes in translations
+following the directive, so if you add this option to an existing
+configuration, you probably have to edit the note messages in it
+accordingly.
 .SH Notes
 .PP
 ShuttlePRO is free and open source software licensed under the GPLv3,
@@ -704,7 +739,7 @@ Copyright 2018 Albert Graef (<aggraef@gmail.com>)
 ShuttlePRO was originally written in 2013 by Eric Messick, based on
 earlier code by Trammell Hudson (<hudson@osresearch.net>) and Arendt
 David (<admin@prnet.org>).
-The latest version, by Albert Graef, offers some improvements, such as
+The present version, by Albert Graef, offers some improvements, such as
 additional command line options, automatic detection of Shuttle devices,
 and, most notably, Jack MIDI support.
 .PP

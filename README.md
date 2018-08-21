@@ -53,6 +53,8 @@ After installation the system-wide default configuration file will be in /etc/sh
 
 The ~/.shuttlerc file, if it exists, takes priority over /etc/shuttlerc, so it becomes your personal shuttlepro configuration. You can edit this file as you see fit, in order to customize the configuration for the applications that you use.
 
+**NOTE:** The program re-reads its configuration file whenever it notices that the file has been changed. However, in the current implementation this check is only done when an input event arrives after the keyboard focus changed to a new window. Thus you can edit the file while the program keeps running, but you'll have to switch windows *and* operate the device to have the changes take effect.
+
 # Usage
 
 The shuttlepro program is a command line application, so you typically run it from the terminal. However, it is also possible to launch it from your Jack session manager (see *MIDI Output* below) or from your desktop environment's startup files once you've set up everything to your liking.
@@ -107,7 +109,7 @@ If the shuttlepro program was built with Jack MIDI support, it can also be used 
 
 [Ardour]: https://ardour.org/
 
-You need to run the program it as `shuttlepro -o` to enable MIDI output at run time. This will start up Jack (if it is not already running) and create a Jack client named `shuttlepro` with a single MIDI output port which can then be connected to the MIDI inputs of other programs. The Jack client name can also be changed with the `-j` option, which is useful if you're running multiple instances of the program with different Shuttle devices (possibly using different configurations).
+You need to run the program as `shuttlepro -o` to enable MIDI output at run time. This will start up Jack (if it is not already running) and create a Jack client named `shuttlepro` with a single MIDI output port which can then be connected to the MIDI inputs of other programs. The Jack client name can also be changed with the `-j` option, which is useful if you're running multiple instances of the program with different Shuttle devices (possibly using different configurations).
 
 We recommend using a Jack front-end and patchbay program like [QjackCtl][] to manage Jack and to set up the MIDI connections. In QjackCtl's setup, make sure that you have selected `seq` as the MIDI driver. This exposes the ALSA sequencer ports of non-Jack ALSA MIDI applications as Jack MIDI ports, so that they can easily be connected to shuttlepro. (We're assuming that you're using Jack1 here. Jack2 works in a very similar way, but may require some more fiddling; in particular, you may have to use [a2jmidid][] as a separate ALSA-Jack MIDI bridge in order to have the ALSA MIDI devices show properly as Jack MIDI devices.)
 
@@ -246,7 +248,7 @@ Case is ignored here, so `CC`, `cc` or even `Cc` are considered to be exactly th
 
 MIDI messages are on channel 1 by default, but you can change this with a dash followed by the desired channel number (1..16). E.g., `C3-10` denotes note `C3` on MIDI channel 10. If multiple messages are output on the same MIDI channel, then you can also use the special `CH` token, which doesn't generate any output by itself, but sets the default channel for subsequent MIDI messages in the sequence. For instance, the sequence `C5-2 E5-2 G5-2`, which outputs a C major chord on MIDI channel 2, can also be abbreviated as `CH2 C5 E5 G5`.
 
-Note messages are specified using the customary notation (note name `A..G`, optionally followed by an accidental, `#` or `b`, followed by the MIDI octave number. Note that all MIDI octaves start at the note C, so `B0` comes before `C1`. By default, `C5` denotes middle C. Enharmonic spellings are equivalent, so, e.g., `D#` and `Eb` denote exactly the same MIDI note.
+Note messages are specified using the customary notation (note name `A..G`, optionally followed by an accidental, `#` or `b`, followed by the MIDI octave number. Note that all MIDI octaves start at the note C, so `B0` comes before `C1`. By default, `C5` denotes middle C (see Section *Octave Numbering* below on how to change this). Enharmonic spellings are equivalent, so, e.g., `D#` and `Eb` denote exactly the same MIDI note.
 
 Here is a quick rundown of the recognized MIDI messages, with an explanation of how they work.
 
@@ -284,7 +286,7 @@ IR PB
 K5 PC5 RELEASE PC0
 ~~~
 
-**C0..G10 (MIDI notes):** Like `PC` messages, these are most useful when bound to key inputs. The note starts (sending a note on MIDI message with maximum velocity) when pressing the key, and finishes (sending the corresponding note off message) when releasing the key. In jog and shuttle assignments, a pair of note on and note off messages is generated (again, this probably isn't very useful unless you bind it to a specific shuttle wheel position).
+**MIDI notes:** Like `PC` messages, these are most useful when bound to key inputs. The note starts (sending a note on MIDI message with maximum velocity) when pressing the key, and finishes (sending the corresponding note off message) when releasing the key. In jog and shuttle assignments, a pair of note on and note off messages is generated (again, this probably isn't very useful unless you bind it to the shuttle wheel).
 
 **Example:** The following binds key K6 to a C-7 chord in the middle octave:
 
@@ -292,9 +294,17 @@ K5 PC5 RELEASE PC0
 K6 C5 E5 G5 Bb5
 ~~~
 
-# Bugs
+## Octave Numbering
 
-The program re-reads its configuration file whenever it notices that the file has been changed. However, in the current implementation this check is only done when an input event arrives after the keyboard focus changed to a new window. Thus you can edit the file while the program keeps running, but you'll have to switch windows *and* operate the device to have the changes take effect.
+A note on the octave numbers in MIDI note designations is in order here. There are various different standards for numbering octaves, and different programs use different standards, which can be rather confusing. E.g., there's the ASA (Acoustical Society of America) standard where middle C is C4, also known as "scientific" or "American standard" pitch notation. At least two other standards exist specifically for MIDI octave numbering, one in which middle C is C3 (so the lowest MIDI octave starts at C-2), and zero-based octave numbers, which start at C0 and have middle C at C5. There's not really a single "best" standard here, but the latter tends to appeal to mathematically inclined and computer-savvy people, and is also what is used by default in the shuttlerc file.
+
+However, you may want to change this, e.g., if you're working with documentation or MIDI monitoring software which uses a different numbering scheme. To do this, just specify the desired offset for the lowest MIDI octave with the special `MIDI_OCTAVE` directive in the configuration file. For instance:
+
+~~~
+MIDI_OCTAVE -1 # ASA pitches (middle C is C4)
+~~~
+
+Note that this transposes *all* existing notes in translations following the directive, so if you add this option to an existing configuration, you probably have to edit the note messages in it accordingly.
 
 # Notes
 
@@ -303,6 +313,6 @@ ShuttlePRO is free and open source software licensed under the GPLv3, please che
 Copyright 2013 Eric Messick (FixedImagePhoto.com/Contact)  
 Copyright 2018 Albert Graef (<aggraef@gmail.com>)
 
-ShuttlePRO was originally written in 2013 by Eric Messick, based on earlier code by Trammell Hudson (<hudson@osresearch.net>) and Arendt David (<admin@prnet.org>). The latest version, by Albert Graef, offers some improvements, such as additional command line options, automatic detection of Shuttle devices, and, most notably, Jack MIDI support.
+ShuttlePRO was originally written in 2013 by Eric Messick, based on earlier code by Trammell Hudson (<hudson@osresearch.net>) and Arendt David (<admin@prnet.org>). The present version, by Albert Graef, offers some improvements, such as additional command line options, automatic detection of Shuttle devices, and, most notably, Jack MIDI support.
 
 Eric's original README along with some accompanying (now largely obsolete) files can still be found in the attic subdirectory in the sources. You might want to consult these in order to get the program to work on older Linux systems.

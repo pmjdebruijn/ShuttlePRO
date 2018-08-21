@@ -89,40 +89,38 @@
 # released (you want to use a ShuttlePRO key as Shift, for example) you
 # can follow it with a /H instead of /D.
 
-# aggraef@gmail.com Fri Aug 3 11:01:32 CEST 2018: It's now also possible
-# to translate events to MIDI messages, and output them via Jack MIDI.
-# To these ends, just invoke the program with the -o (MIDI output) option.
-# This will start Jack if it's not already running, and create a Jack
-# MIDI client named "shuttlepro" with a single MIDI output port, which
-# can be hooked up to other Jack MIDI applications in the usual way
-# (e.g., using a patchbay program like qjackctl; non-Jack ALSA MIDI
-# applications can be accommodated using a2jmidid).  In the
-# translations, MIDI messages can be freely mixed with keypresses; the
-# MIDI messages will be simply ignored if Jack MIDI output is not enabled.
+# It's also possible to translate events to MIDI messages, and output
+# them via Jack MIDI.  To these ends, just invoke the program with the
+# -o (MIDI output) option.  This will start Jack if it's not already
+# running, and create a Jack MIDI client named "shuttlepro" with a
+# single MIDI output port, which can be hooked up to other Jack MIDI
+# applications in the usual way (e.g., using a patchbay program like
+# qjackctl).  In the translations, MIDI messages can be freely mixed
+# with keypresses; the MIDI messages will be simply ignored if Jack MIDI
+# output is not enabled.
 
-# Here is a brief rundown of the supported MIDI messages (a more detailed
-# account with examples can be found in readconfig.c):
+# Here is a brief rundown of the supported MIDI messages (please check
+# the manual for a much more detailed account with examples):
 
 # CH<1..16>: sets the default output channel for subsequent MIDI messages
 # CC<0..127>: outputs a control change message for the given controller
 # PC<0..127>: outputs a program change message
 # PB: outputs a pitch bend message
 # <A..G><#b><0..10> (MIDI notes): outputs the given MIDI note (note on
-# when pressed, note off when released); note names use the customary
-# MIDI notation, with # and b denoting accidentals; the number at the
-# end denotes the MIDI octave in the range 0..10 (C5 is middle C)
+# when pressed, note off when released)
 
-# You can also set the MIDI channel of a single message directly as a
-# suffix, separating message and channel number with a dash, e.g.:
-# CC7-10. (This MIDI channel suffix only applies to a single message,
-# other messages without a suffix will still use the default MIDI
-# channel set with CH.)
+# Note messages are specified using the customary notation (note name
+# A..G, optionally followed by an accidental, # or b, followed by a MIDI
+# octave number.  Enharmonic spellings are equivalent, so, e.g., D# and
+# Eb denote exactly the same MIDI note.  All MIDI octaves start at the
+# note C, so B0 comes before C1.  By default, octave numbers are
+# zero-based, so C0 is MIDI note 0, and C5 denotes middle C.  However,
+# you can adjust this to your liking by specifying the offset of the
+# lowest MIDI octave.  Two of the most common alternatives are listed
+# below (uncomment one of the following lines to use these):
 
-# PC and note messages can only be bound to key events (they will be
-# ignored otherwise). CC and PB also work with the jog wheel and the
-# shuttle; if they are bound to key events, pressing the key will
-# produce the maximum controller or pitch bend value, releasing it
-# resets it to zero, or -- for PB -- the center value.
+#MIDI_OCTAVE -1 # ASA (Acoustical Society of America; middle C is C4)
+#MIDI_OCTAVE -2 # alternate MIDI (various manufacturers; middle C is C3)
 
 # If you want to see exactly how this file is parsed and converted into
 # KeySym strokes and MIDI messages, run the shuttle program in a
@@ -139,9 +137,8 @@
 
 # NOTE: The debugging options can also be specified on the command line
 # using -d in conjunction with any of the letters r, s and k (or the
-# letter j if you also want debugging output from Jack, if it is
-# enabled).  Just -d without any option letter turns on all debugging
-# options.
+# letter j if you also want debugging output from Jack).  Just -d
+# without any option letter turns on all debugging options.
 
 
 # As one of the main reasons to use a ShuttlePRO is video editing, I've
