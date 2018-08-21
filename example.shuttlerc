@@ -1,5 +1,6 @@
 
 # Copyright 2013 Eric Messick (FixedImagePhoto.com/Contact)
+# Copyright 2018 Albert Graef <aggraef@gmail.com>
 #
 # Lines in this file starting with # are comments.
 
@@ -173,9 +174,6 @@
  JR XK_KP_1     # Frame forward
 
 
-# AG <aggraef@gmail.com>: Here are some of the bindings that I use. They are
-# for the Shuttle Xpress, so they use only a limited set of buttons.
-
 # Shotcut (WM_CLASS is "shotcut")
 # see https://www.shotcut.org/howtos/keyboard-shortcuts/
 
@@ -223,20 +221,31 @@
  JR XK_Right    # Frame forward
 
 
-# AG <aggraef@gmail.com>: The special "MIDI" default section is only
-# active when MIDI output is enabled (shuttlepro -o).
+# The special "MIDI" default section is only active when MIDI output is
+# enabled (shuttlepro -o).
 
 [MIDI]
 
 # Poor man's MCU. This emulates a Mackie-compatible device with playback
-# controls and a jog wheel. You can use this as a (rather rudimentary)
+# controls (including fast forward/rewind, which are assigned to the
+# shuttle) and a jog wheel. You can use this as a (rather rudimentary)
 # Mackie control surface, e.g., with Ardour.
 
- K5 G7  # Rewind
  K6 A7  # Stop
  K7 A#7 # Play
  K8 B7  # Record
- K9 G#7 # Fast Forward
+# K8 D7  # Cycle
+
+# Move the cursor on the timeline.
+
+ K5 D8  # Left
+ K9 D#8 # Right
+
+# Shuttle (fast forward/rewind/stop).
+
+ IL G7  # Rewind
+ IR G#7 # Fast Forward
+ S0 A7  # Stop
 
 # The Mackie jog wheel is CC60, but it uses a special kind of encoding
 # of relative controller values, indicated with the ~ suffix.
