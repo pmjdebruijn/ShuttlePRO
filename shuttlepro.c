@@ -90,13 +90,16 @@ send_midi(int status, int data, int incr, int kjs, int index)
   switch (status & 0xf0) {
   case 0x90:
     // send a note on (with maximum velocity) for KJS_KEY_DOWN, note off for
-    // KJS_KEY_UP, nothing for non-key input
+    // KJS_KEY_UP, or both for non-key input
     if (kjs == KJS_KEY_DOWN)
       msg[2] = 127;
     else if (kjs == KJS_KEY_UP)
       msg[2] = 0;
-    else
-      return;
+    else {
+      msg[2] = 127;
+      queue_midi(&seq, msg);
+      msg[2] = 0;
+    }
     break;
   case 0xb0:
     switch (kjs) {
@@ -197,8 +200,8 @@ send_midi(int status, int data, int incr, int kjs, int index)
     break;
   }
   case 0xc0:
-    // just send the message for KJS_KEY_DOWN and KJS_KEY_UP
-    if (kjs != KJS_KEY_DOWN && kjs != KJS_KEY_UP) return;
+    // just send the message (once for key presses)
+    if (kjs == KJS_KEY_UP) return;
     break;
   default:
     return;
@@ -308,8 +311,7 @@ shuttle(int value, translation *tr)
 	shuttlevalue = 0;
       }
       int direction = (value < shuttlevalue) ? -1 : 1;
-      int index = direction > 0 ? 1 : 0;
-      send_stroke_sequence(tr, KJS_SHUTTLE, value+7);
+      int index = direction > 0 ? 1 : 0, val = value+7;
       if (fetch_stroke(tr, KJS_SHUTTLE_INCR, index)) {
 	while (shuttlevalue != value) {
 	  send_stroke_sequence(tr, KJS_SHUTTLE_INCR, index);
@@ -317,6 +319,7 @@ shuttle(int value, translation *tr)
 	}
       } else
 	shuttlevalue = value;
+      send_stroke_sequence(tr, KJS_SHUTTLE, val);
     }
   }
 }
