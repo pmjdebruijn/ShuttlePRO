@@ -86,114 +86,6 @@
   client (use the a2jmidid program to connect to non-Jack ALSA MIDI
   applications).
 
-  Here is the complete list of tokens recognized as MIDI messages, with an
-  explanation of how they work. Note that not all MIDI messages are supported
-  right now (no aftertouch, no system messages), but that subset should be
-  enough to handle most common use cases. (In any case, adding more message
-  types should be a piece of cake.) Also note that bindings can involve as
-  many MIDI messages as you want, and these can be combined freely with
-  keypress events in any order. There's no limitation on the type or number of
-  MIDI messages that you can put into a binding (except that program change
-  and note messages can only be bound to key inputs).
-
-  CCn: Generates a MIDI control change message for controller number n, where
-  n must be in the range 0..127. These can be bound to any kind of input event
-  (key, jog, or shuttle). In the case of jog or shuttle, the controller value
-  will correspond to the jog/shuttle position, clamped to the 0..127 (single
-  data byte) range. For key input, the control change message will be sent
-  once with a value of 127 when the key is pressed, and then again with a
-  value of 0 when the key is released.
-
-  Example: CC7 generates a MIDI message to change the volume controller
-  (controller #7), while CC1 changes the modulation wheel (controller #1,
-  usually some kind of vibrato effect). You can bind these, e.g., to the jog
-  wheel or a key as follows:
-
-  JL CC7
-  JR CC7
-  K5 CC1
-
-  When used with the jog wheel, you can also generate relative control changes
-  in a special "sign bit" format which is commonly used for endless rotary
-  controllers. In this case, a +1 change is represented by the controller
-  value 1, and a -1 change by 65 (a 1 with the sign in the 7th bit). This
-  special mode of operation is indicated with a trailing tilde. E.g., here's
-  how to bind an MCU-style jog wheel (CC60) event to the Shuttle's jog wheel:
-
-  JL CC60~
-  JR CC60~
-
-  PB: Generates a MIDI pitch bend message. This works pretty much like a MIDI
-  control change message, but with an extended range of 0..16383, where 8192
-  denotes the center value. Obviously, this message is best bound to the
-  shuttle (albeit with a resolution limited to 14 steps), but it also works
-  with the jog wheel (with each tick representing 1/128th of the full pitch
-  bend range) and even key input (in this case, 8192 is used as the "off"
-  value, so the pitch only bends up, never down).
-
-  Example: Just PB generates a pitch bend message. You usually want to bind
-  this to the shuttle (in incremental mode), so the corresponding translations
-  would normally look like this:
-
-  IL PB
-  IR PB
-
-  PCn: This generates a MIDI program change message for the given program
-  number n, which must be in the 0..127 range. This type of message only works
-  with key input, it will be ignored in jog and shuttle assignments. Also, by
-  default the PC message is generated only at the time the key is pressed. To
-  have another PC message generated at key release time, it must be put
-  explicitly into the RELEASE part of the key binding.
-
-  Example: The following will output a change to program 5 when K5 is pressed,
-  and another change to program 0 when the key is released (note that if you
-  leaved away the "RELEASE PC0" part, then only the PC5 will be output when
-  pressing the key, nothing happens when the key is released):
-
-  K5 PC5 RELEASE PC0
-
-  C0..G10 (MIDI notes): This uses the customary MIDI note names, consisting of
-  the letters A..G (denoting the seven white keys in an octave, in either
-  upper- or lowercase), optionally followed by b or # (denoting accidentals,
-  flat and sharp), and terminated with an octave number (0..10). Middle C is
-  denoted C5. Like PC messages, these can only be bound to key inputs; they
-  will be ignored when used with jog or shuttle. The note starts (sending a
-  note on MIDI message) when pressing the key, and finishes (sending the
-  corresponding note off message) when releasing the key.
-
-  Example: The following binds key K6 to a C-7 chord in the middle octave:
-
-  K6 C5 E5 G5 Bb5
-
-  CHk: This doesn't actually output any MIDI message, but merely changes the
-  default MIDI channel for all subsequent MIDI messages. k denotes the MIDI
-  channel, which must be in the range 1..16. By default (if the CH command
-  isn't used), MIDI messages will be sent on MIDI channel 1.
-
-  Example: CH10 C3 outputs the note C3 (MIDI note 36) on MIDI channel 10
-  (usually the drum channel). Here's how you can assign keys K5..K9 to play a
-  little drumkit:
-
-  K5 CH10 B2
-  K6 CH10 C3
-  K7 CH10 C#3
-  K8 CH10 D3
-  K9 CH10 D#3
-
-  Instead of using "CH", you can also specify the MIDI channel of a single
-  message directly as a suffix, separating message and channel number with a
-  dash, like so:
-
-  K5 B2-10
-  K6 C3-10
-  K7 C#3-10
-  K8 D3-10
-  K9 D#3-10
-
-  This is also the format used when printing MIDI messages in translations.
-  Note that the MIDI channel suffix only applies to a single message, other
-  messages without a suffix will still use the default MIDI channel.
-
  */
 
 #include "shuttle.h"
@@ -544,7 +436,10 @@ print_stroke(stroke *s)
 void
 print_stroke_sequence(char *name, char *up_or_down, stroke *s)
 {
-  printf("%s[%s]: ", name, up_or_down);
+  if (up_or_down && *up_or_down)
+    printf("%s[%s]: ", name, up_or_down);
+  else
+    printf("%s: ", name);
   while (s) {
     print_stroke(s);
     s = s->next;
