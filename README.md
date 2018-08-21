@@ -39,7 +39,7 @@ First, make sure that you have the required dependencies installed. The program 
 
     sudo apt install build-essential libx11-dev libxtst-dev libjack-dev
 
-Then just run `make` and `sudo make install`. This installs the example.shuttlerc file as /etc/shuttlerc, and the shuttlepro program and the manual page in the default install location. Usually this will under /usr/local, but the installation prefix can be changed with the `prefix` variable in the Makefile. Also, package maintainers can use the `DESTDIR` variable as usual to install into a staging directory for packaging purposes.
+Then just run `make` and `sudo make install`. This installs the example.shuttlerc file as /etc/shuttlerc, and the shuttlepro program and the manual page in the default install location. Usually this will be under /usr/local, but the installation prefix can be changed with the `prefix` variable in the Makefile. Also, package maintainers can use the `DESTDIR` variable as usual to install into a staging directory for packaging purposes.
 
 The program will automatically be built with Jack MIDI support if the Jack development files are detected at compile time. (If you do have Jack installed, but you still want to build a Jack-less version of the program for some reason, you can do that by running `make JACK=` instead of just `make`.)
 
