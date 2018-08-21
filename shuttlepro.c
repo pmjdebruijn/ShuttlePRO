@@ -517,17 +517,81 @@ void help(char *progname)
   fprintf(stderr, "Otherwise the program will try to find a suitable device on its own.\n");
 }
 
+void jack_warning(char *progname)
+{
+  fprintf(stderr, "%s: Warning: this version was compiled without Jack support\n", progname);
+  fprintf(stderr, "Try recompiling the program with Jack installed to enable this option.\n");
+}
+
 #include <glob.h>
+
+// Helper functions to process the command line, so that we can pass it to
+// Jack session management.
+
+static char *command_line;
+static size_t len;
+
+static void add_command(char *arg)
+{
+  char *a = arg;
+  // Do some simplistic quoting if the argument contains blanks. This won't do
+  // the right thing if the argument also contains quotes. Oh well.
+  if ((strchr(a, ' ') || strchr(a, '\t')) && !strchr(a, '"')) {
+    a = malloc(strlen(arg)+3);
+    sprintf(a, "\"%s\"", arg);
+  }
+  if (!command_line) {
+    len = strlen(a);
+    command_line = malloc(len+1);
+    strcpy(command_line, a);
+  } else {
+    size_t l = strlen(a)+1;
+    command_line = realloc(command_line, len+l+1);
+    command_line[len] = ' ';
+    strcpy(command_line+len+1, a);
+    len += l;
+  }
+  if (a != arg) free(a);
+}
+
+static char *absolute_path(char *name)
+{
+  if (*name == '/') {
+    return name;
+  } else {
+    // This is a relative pathname, we turn it into a canonicalized absolute
+    // path.  NOTE: This requires glibc. We should probably rewrite this code
+    // to be more portable.
+    char *pwd = getcwd(NULL, 0);
+    if (!pwd) {
+      perror("getcwd");
+      return name;
+    } else {
+      char *path = malloc(strlen(pwd)+strlen(name)+2);
+      static char abspath[PATH_MAX];
+      sprintf(path, "%s/%s", pwd, name);
+      realpath(path, abspath);
+      free(path); free(pwd);
+      return abspath;
+    }
+  }
+}
 
 int
 main(int argc, char **argv)
 {
   EV ev;
   int nread;
-  char *dev_name, *client_name = "shuttlepro";
+  char *dev_name;
+#if HAVE_JACK
+  char *client_name = "shuttlepro";
+#endif
   int fd;
   int first_time = 1;
   int opt;
+
+  // Start recording the command line to be passed to Jack session management.
+  add_command(argv[0]);
 
   while ((opt = getopt(argc, argv, "hod::j:r:")) != -1) {
     switch (opt) {
@@ -537,14 +601,16 @@ main(int argc, char **argv)
     case 'o':
 #if HAVE_JACK
       enable_jack = 1;
+      add_command("-o");
 #else
-      fprintf(stderr, "%s: Warning: this version was compiled without Jack support\n", argv[0]);
-      fprintf(stderr, "Try recompiling the program with Jack installed to enable this option.\n");
+      jack_warning(argv[0]);
 #endif
       break;
     case 'd':
       if (optarg && *optarg) {
-	const char *a = optarg;
+	const char *a = optarg; char buf[100];
+	snprintf(buf, 100, "-d%s", optarg);
+	add_command(buf);
 	while (*a) {
 	  switch (*a) {
 	  case 'r':
@@ -569,13 +635,24 @@ main(int argc, char **argv)
       } else {
 	default_debug_regex = default_debug_strokes = default_debug_keys = 1;
 	debug_jack = 1;
+	add_command("-d");
       }
       break;
     case 'j':
+#if HAVE_JACK
       client_name = optarg;
+      add_command("-j");
+      add_command(optarg);
+#else
+      jack_warning(argv[0]);
+#endif
       break;
     case 'r':
       config_file_name = optarg;
+      add_command("-r");
+      // We need to convert this to an absolute pathname for Jack session
+      // management.
+      add_command(absolute_path(optarg));
       break;
     default:
       fprintf(stderr, "Try -h for help.\n");
@@ -609,6 +686,7 @@ main(int argc, char **argv)
   initdisplay();
 
 #if HAVE_JACK
+  if (command_line) jack_command_line = command_line;
   if (enable_jack) {
     seq.client_name = client_name;
     if (!init_jack(&seq, debug_jack)) enable_jack = 0;
@@ -629,9 +707,16 @@ main(int argc, char **argv)
       } else {
 	first_time = 0;
 	while (1) {
+	  // Bail out if Jack asked us to quit.
+	  if (jack_quit) exit(0);
 	  nread = read(fd, &ev, sizeof(ev));
 	  if (nread == sizeof(ev)) {
 	    handle_event(ev);
+	    // Make sure that debugging output gets flushed every once in a
+	    // while (may be buffered when we're running inside a QjackCtl
+	    // session).
+	    if (debug_regex || debug_strokes || debug_keys)
+	      fflush(stdout);
 	  } else {
 	    if (nread < 0) {
 	      perror("read event");

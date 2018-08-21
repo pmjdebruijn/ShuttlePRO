@@ -40,6 +40,7 @@
 #include <jack/jack.h>
 #include <jack/midiport.h>
 #include <jack/ringbuffer.h>
+#include <jack/session.h>
 #include "jackdriver.h"
 
 
@@ -280,6 +281,35 @@ void queue_midi(void* seqq, uint8_t msg[])
     queue_message(seq->ringbuffer_out,&ev);
 }
 
+// support for Jack shutdown and session management
+
+void
+shutdown_callback()
+{
+  // AG: We shouldn't really bail out in the real time thread, but simply
+  // setting a flag won't work here, because the main thread may still be
+  // blocked in a read operation und see the flag much too late.
+  exit(0);
+}
+
+int jack_quit;
+char *jack_command_line = "shuttlepro";
+
+void
+session_callback(jack_session_event_t *event, void *seqq)
+{
+  JACK_SEQ* seq = (JACK_SEQ*)seqq;
+
+  event->command_line = strdup(jack_command_line);
+  jack_session_reply(seq->jack_client, event);
+
+  if (event->type == JackSessionSaveAndQuit) {
+    jack_quit = 1;
+  }
+
+  jack_session_event_free (event);
+}
+
 ////////////////////////////////
 //this is run in the main thread
 ////////////////////////////////
@@ -287,15 +317,31 @@ int
 init_jack(JACK_SEQ* seq, uint8_t verbose)
 {
     int err;
+    char *client_name = seq->client_name?seq->client_name:"shuttlepro";
+    jack_status_t status;
 
     if(verbose)printf("opening client...\n");
-    seq->jack_client = jack_client_open(seq->client_name, JackNullOption, NULL);
+    seq->jack_client = jack_client_open(client_name, JackNullOption, &status);
 
     if (seq->jack_client == NULL)
     {
         printf("Could not connect to the JACK server; run jackd first?\n");
         return 0;
     }
+
+    if (verbose && (status & JackServerStarted)) {
+      printf("JACK server started\n");
+    }
+    if (verbose && (status & JackNameNotUnique)) {
+      client_name = jack_get_client_name(seq->jack_client);
+      printf("JACK client name changed to: %s\n", client_name);
+    }
+
+    if(verbose)printf("assigning shutdown callback...\n");
+    jack_on_shutdown(seq->jack_client, shutdown_callback, (void*)seq);
+
+    if(verbose)printf("assigning session callback...\n");
+    jack_set_session_callback(seq->jack_client, session_callback, (void*)seq);
 
     if(verbose)printf("assigning process callback...\n");
     err = jack_set_process_callback(seq->jack_client, process_callback, (void*)seq);
