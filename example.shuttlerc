@@ -90,7 +90,7 @@
 
 # aggraef@gmail.com Fri Aug 3 11:01:32 CEST 2018: It's now also possible
 # to translate events to MIDI messages, and output them via Jack MIDI.
-# To these ends, just invoke the program with the -j (Jack) option.
+# To these ends, just invoke the program with the -o (MIDI output) option.
 # This will start Jack if it's not already running, and create a Jack
 # MIDI client named "shuttlepro" with a single MIDI output port, which
 # can be hooked up to other Jack MIDI applications in the usual way
@@ -224,7 +224,7 @@
 
 
 # AG <aggraef@gmail.com>: The special "MIDI" default section is only
-# active when MIDI support is enabled (shuttlepro -j).
+# active when MIDI output is enabled (shuttlepro -o).
 
 [MIDI]
 

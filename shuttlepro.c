@@ -507,9 +507,10 @@ handle_event(EV ev)
 
 void help(char *progname)
 {
-  fprintf(stderr, "Usage: %s [-h] [-j] [-r rcfile] [-d[rskj]] [device]\n", progname);
+  fprintf(stderr, "Usage: %s [-h] [-o] [-j name] [-r rcfile] [-d[rskj]] [device]\n", progname);
   fprintf(stderr, "-h print this message\n");
-  fprintf(stderr, "-j enable Jack MIDI output\n");
+  fprintf(stderr, "-o enable MIDI output\n");
+  fprintf(stderr, "-j jack client name (default: shuttlepro)\n");
   fprintf(stderr, "-r config file name (default: SHUTTLE_CONFIG_FILE variable or ~/.shuttlerc)\n");
   fprintf(stderr, "-d debug (r = regex, s = strokes, k = keys, j = jack; default: all)\n");
   fprintf(stderr, "device, if specified, is the name of the shuttle device to open.\n");
@@ -523,21 +524,21 @@ main(int argc, char **argv)
 {
   EV ev;
   int nread;
-  char *dev_name;
+  char *dev_name, *client_name = "shuttlepro";
   int fd;
   int first_time = 1;
   int opt;
 
-  while ((opt = getopt(argc, argv, "hjd::r:")) != -1) {
+  while ((opt = getopt(argc, argv, "hod::j:r:")) != -1) {
     switch (opt) {
     case 'h':
       help(argv[0]);
       exit(0);
-    case 'j':
+    case 'o':
 #if HAVE_JACK
       enable_jack = 1;
 #else
-      fprintf(stderr, "%s: Warning: this version was compiled without Jack support (-j)\n", argv[0]);
+      fprintf(stderr, "%s: Warning: this version was compiled without Jack support\n", argv[0]);
       fprintf(stderr, "Try recompiling the program with Jack installed to enable this option.\n");
 #endif
       break;
@@ -569,6 +570,9 @@ main(int argc, char **argv)
 	default_debug_regex = default_debug_strokes = default_debug_keys = 1;
 	debug_jack = 1;
       }
+      break;
+    case 'j':
+      client_name = optarg;
       break;
     case 'r':
       config_file_name = optarg;
@@ -606,6 +610,7 @@ main(int argc, char **argv)
 
 #if HAVE_JACK
   if (enable_jack) {
+    seq.client_name = client_name;
     if (!init_jack(&seq, debug_jack)) enable_jack = 0;
   }
 #endif

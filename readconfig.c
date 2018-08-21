@@ -72,13 +72,14 @@
   special "MIDI" default section of the shuttlerc file, then the target
   application will be able to receive data from the device no matter which
   window has the keyboard focus. (This special "MIDI" section will only be
-  active if Jack MIDI support is actually enabled with the -j option, see
+  active if Jack MIDI support is actually enabled with the -o option, see
   below. This allows you to have another default section after the MIDI
   section for non-MIDI operation.)
 
-  To enable MIDI output, add the -j option when invoking the program (also,
-  the -dj option can be used to get verbose output from Jack if needed). This
-  causes a Jack client named "shuttlepro" with a single MIDI output port to be
+  To enable MIDI output, add the -o option when invoking the program (also,
+  you can set the Jack client name with the -j option, and the -dj option can
+  be used to get verbose output from Jack if needed). This causes a Jack
+  client (named "shuttlepro" by default) with a single MIDI output port to be
   created, and will also start up Jack if it is not already running. Any MIDI
   messages in the translations will be sent on that port. You can then use any
   Jack patchbay such as qjackctl to connect the output to any other Jack MIDI

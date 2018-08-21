@@ -94,14 +94,14 @@ The `shuttlepro` program can also be used to translate input from the Shuttle de
 
 The program will automatically be built with Jack MIDI support if the Jack development files are available at compile time. (However, if you do have Jack installed, but you still want to build a Jack-less version of the program, you can do that by running `make JACK=` instead of just `make`.)
 
-If the program was built with Jack MIDI support, you still need to run it as `shuttlepro -j` to enable the MIDI support at run time. This will start up Jack (if it is not already running) and create a Jack client named `shuttlepro` with a single MIDI output port which can then be connected to the MIDI inputs of other programs.
+If the program was built with Jack MIDI support, you still need to run it as `shuttlepro -o` to enable MIDI output at run time. This will start up Jack (if it is not already running) and create a Jack client named `shuttlepro` with a single MIDI output port which can then be connected to the MIDI inputs of other programs.
 
 We recommend using a Jack front-end and patchbay program like [QjackCtl][] to manage Jack and to set up the MIDI connections. Non-Jack ALSA MIDI applications can be accommodated using the [a2jmidid][] program, an ALSA-Jack MIDI bridge which exposes ALSA sequencer ports as Jack MIDI ports, so that they can easily be connected using QjackCtl. (Starting up a2jmidid can be handled automatically by QJackCtl as well; in QJackCtl's Setup dialog, on the Options tab, simply place the command `a2jmidid -e &` in the "Execute script after Startup" field. This will work no matter which Jack version you use, but it should be mentioned that the latest versions of Jack1 have the a2jmidid functionality already built into it.)
 
 [QjackCtl]: https://qjackctl.sourceforge.io/
 [a2jmidid]: http://repo.or.cz/a2jmidid.git
 
-The example.shuttlerc file comes with a sample configuration in the `[MIDI]` section for illustration purposes. This special default section is only active if the program is run with the `-j` option. It allows MIDI output to be sent to any connected applications, no matter which window currently has the keyboard focus. This is probably the most common way to use this feature, but of course it is also possible to have application-specific MIDI translations, in the same way as with X11 key bindings. In fact, you can freely mix mouse actions, key presses and MIDI messages in all translations.
+The example.shuttlerc file comes with a sample configuration in the `[MIDI]` section for illustration purposes. This special default section is only active if the program is run with the `-o` option. It allows MIDI output to be sent to any connected applications, no matter which window currently has the keyboard focus. This is probably the most common way to use this feature, but of course it is also possible to have application-specific MIDI translations, in the same way as with X11 key bindings. In fact, you can freely mix mouse actions, key presses and MIDI messages in all translations.
 
 The sample `[MIDI]` section implements a simplistic DAW controller which can be used as a (rather rudimentary) Mackie control surface, e.g., with Ardour. The buttons `K5` .. `K9` are mapped to the playback controls (Rewind, Stop, Play, Record, Fast Forward), and the jog wheel emulates the MCU jog wheel (`CC60`). The configuration entry looks as follows:
 
@@ -120,4 +120,4 @@ The sample `[MIDI]` section implements a simplistic DAW controller which can be 
 
 (Note the `CC60~` event in the jog wheel translations. The `~` suffix indicates that `CC60` is to be treated as an endless rotary encoder which represents relative changes of the jog wheel value in a special "sign bit" format, see the readconfig.c file for details.)
 
-To try it, run `shuttlepro -j`, fire up Ardour, and configure a Mackie control surface in Ardour which takes input from the MIDI output of the `shuttlepro` client. The playback controls and the jog wheel should then work exactly like a real Mackie-like MIDI controller connected directly to Ardour.
+To try it, run `shuttlepro -o`, fire up Ardour, and configure a Mackie control surface in Ardour which takes input from the MIDI output of the `shuttlepro` client. The playback controls and the jog wheel should then work exactly like a real Mackie-like MIDI controller connected directly to Ardour.

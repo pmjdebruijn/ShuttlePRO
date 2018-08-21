@@ -289,7 +289,7 @@ init_jack(JACK_SEQ* seq, uint8_t verbose)
     int err;
 
     if(verbose)printf("opening client...\n");
-    seq->jack_client = jack_client_open("shuttlepro", JackNullOption, NULL);
+    seq->jack_client = jack_client_open(seq->client_name, JackNullOption, NULL);
 
     if (seq->jack_client == NULL)
     {

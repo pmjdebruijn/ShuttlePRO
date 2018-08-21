@@ -8,6 +8,7 @@ typedef struct _jseq
     jack_ringbuffer_t *ringbuffer_out;
     jack_client_t	*jack_client;
     jack_port_t	*output_port;
+    char *client_name;
 } JACK_SEQ;
 
 int init_jack(JACK_SEQ* seq, uint8_t verbose);
