@@ -17,6 +17,9 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <signal.h>
+#include <errno.h>
+#include <time.h>
 
 #include <regex.h>
 

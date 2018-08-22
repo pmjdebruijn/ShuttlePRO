@@ -580,6 +580,13 @@ static char *absolute_path(char *name)
   }
 }
 
+uint8_t quit = 0;
+
+void quit_callback()
+{
+  quit = 1;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -698,7 +705,9 @@ main(int argc, char **argv)
 #endif
 
   time_t last_t = time(NULL);
-  while (1) {
+  struct sigaction int_handler = { .sa_handler = quit_callback };
+  sigaction(SIGINT, &int_handler, 0);
+  while (!quit) {
     fd = open(dev_name, O_RDONLY);
     if (fd < 0) {
       perror(dev_name);
@@ -711,12 +720,9 @@ main(int argc, char **argv)
 	perror( "evgrab ioctl" );
       } else {
 	first_time = 0;
-	while (1) {
-	  // Bail out if Jack asked us to quit.
-#if HAVE_JACK
-	  if (jack_quit) exit(0);
-#endif
+	while (!quit) {
 	  nread = read(fd, &ev, sizeof(ev));
+	  if (nread < 0 && quit) break;
 	  // Check whether to reload the config file in regular intervals.
 	  // Note that if the file *is* reloaded, then we also need to reset
 	  // last_focused_window here, so that the translations of the focused
@@ -746,6 +752,6 @@ main(int argc, char **argv)
       }
     }
     close(fd);
-    sleep(1);
+    if (!quit) sleep(1);
   }
 }

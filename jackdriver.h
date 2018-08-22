@@ -13,7 +13,6 @@ typedef struct _jseq
 
 // This is supposed to be set properly by main().
 extern char *jack_command_line;
-extern int jack_quit;
 
 int init_jack(JACK_SEQ* seq, uint8_t verbose);
 void close_jack(JACK_SEQ* seq);

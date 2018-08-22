@@ -283,16 +283,17 @@ void queue_midi(void* seqq, uint8_t msg[])
 
 // support for Jack shutdown and session management
 
+#include <signal.h>
+
 void
 shutdown_callback()
 {
-  // AG: We shouldn't really bail out in the real time thread, but simply
-  // setting a flag won't work here, because the main thread may still be
-  // blocked in a read operation und see the flag much too late.
-  exit(0);
+  // We signal the main thread here, which may be blocked in a read
+  // operation. The signal will interrupt the read operation so that the main
+  // thread can do a proper shutdown.
+  kill(getpid(), SIGINT);
 }
 
-int jack_quit;
 char *jack_command_line = "shuttlepro";
 
 void
@@ -303,9 +304,8 @@ session_callback(jack_session_event_t *event, void *seqq)
   event->command_line = strdup(jack_command_line);
   jack_session_reply(seq->jack_client, event);
 
-  if (event->type == JackSessionSaveAndQuit) {
-    jack_quit = 1;
-  }
+  if (event->type == JackSessionSaveAndQuit)
+    kill(getpid(), SIGINT);
 
   jack_session_event_free (event);
 }
