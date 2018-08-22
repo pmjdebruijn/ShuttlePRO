@@ -6,7 +6,7 @@ shuttlepro -- translate input from the Contour Design Shuttle devices
 
 # Synopsis
 
-shuttlepro [-h] [-o] [-j *name*] [-r *rcfile*] [-d[rskj]]
+shuttlepro [-h] [-o] [-j *name*] [-r *rcfile*] [-d[rskj]] [*device*]
 
 # Options
 
@@ -27,11 +27,13 @@ shuttlepro [-h] [-o] [-j *name*] [-r *rcfile*] [-d[rskj]]
 
 # Description
 
-The Contour Design Shuttle devices, such as the ShuttlePRO v2 and the Shuttle Xpress, are specialized input devices mainly used with audio and video editing software. They offer three different kinds of controls: a jog wheel (an endless rotary encoder), a shuttle wheel surrounding the jog wheel which automatically snaps back into its center position, and a collection of buttons arranged around the jog and shuttle wheels.
+The Contour Design Shuttle devices are specialized input devices mainly used with audio and video editing software. They offer three different kinds of controls: a jog wheel (an endless rotary encoder), a shuttle wheel surrounding the jog wheel which automatically snaps back into its center position, and a collection of buttons arranged around the jog and shuttle wheels.
 
-The shuttlepro program enables you to use these devices with your X11 applications. It will work with any application taking keyboard, mouse or MIDI input, without requiring any special support from the application. The program translates input events (button presses, jog and shuttle wheel movements) into X keystrokes, mouse button presses, scroll wheel events, or, as an option, MIDI output. It does this by matching the `WM_CLASS` and `WM_NAME` properties of the window that has the keyboard focus against the regular expressions for each application section in its configuration (shuttlerc) file. If a regex matches, the corresponding set of translations is used. Otherwise the program falls back to a set of translations in a default section at the end of the file, if available.
+There are various versions of these devices. The current line of products from Contour Design consists of the ShuttlePRO v2 and the ShuttleXpress. These and a few older versions should be recognized by the shuttlepro program without any further ado. However, there are also some rebranded versions which might not be detected automatically, in which case you'll have to specify the device name on the command line.
 
-The shuttlerc file is just an ordinary text file which you can edit to configure the program for your applications. A sample shuttlerc file containing configurations for some applications is included, see example.shuttlerc in the sources.
+The shuttlepro program enables you to use these devices on Linux. It will work with any application taking X11 keyboard and mouse or MIDI input, without requiring any special support from the application. The program translates input events (button presses, jog and shuttle wheel movements) into X keystrokes, mouse button presses, scroll wheel events, or, as an option, MIDI output. It does this by matching the `WM_CLASS` and `WM_NAME` properties of the window that has the keyboard focus against the regular expressions for each application section in its configuration (shuttlerc) file. If a regex matches, the corresponding set of translations is used. If a matching section cannot be found, or if it doesn't define a suitable translation, the program falls back to a set of default translations at the end of the file, if available.
+
+The shuttlerc file is just an ordinary text file which you can edit to configure the program for your applications. A sample configuration file is included, see example.shuttlerc in the sources. This also gets installed as a system-wide configuration file, so that the program works out of the box with any of the preconfigured applications. At the time of this writing, there are ready-to-use translations for some popular video editors and a basic Mackie emulation which should work with most DAW (digital audio workstation) programs.
 
 ## Installation
 
@@ -57,7 +59,7 @@ The ~/.shuttlerc file, if it exists, takes priority over /etc/shuttlerc, so it b
 
 # Usage
 
-The shuttlepro program is a command line application, so you typically run it from the terminal. However, it is also possible to launch it from your Jack session manager (see *MIDI Output* below) or from your desktop environment's startup files once you've set up everything to your liking.
+The shuttlepro program is a command line application, so you typically run it from the terminal. However, you can also launch it from your Jack session manager (see *MIDI Output* below) or from your desktop environment's startup files once you've set up everything to your liking. Using the Linux udev system, it is also possible to recognize the device when it is plugged in, and have the shuttlepro program launched automatically; please check the *Notes* section for details.
 
 Before you can use the program, you have to make sure that you can access the device. On modern Linux systems, becoming a member of the `input` group should be all that is needed:
 
@@ -68,9 +70,11 @@ Log out and in again, and you should be set. Now make sure that your Shuttle dev
     shuttlepro: found shuttle device:
 	/dev/input/by-id/usb-Contour_Design_ShuttleXpress-event-if00
 
-(The precise name of the device will differ, depending on the type of device that you have. E.g., the output above indicates that a Shuttle Xpress was found.)
+(The precise name of the device will differ, depending on the version of the device that you have. E.g., the output above indicates that a Shuttle Xpress was found.)
 
-If the program fails to find your device, you'll have to locate it yourself and specify the absolute pathname to it on the command line. Usually there should be an entry under /dev/input/by-id for it, which is simply a symbolic link to some device node under /dev/input. Naming the device on the command line will also be necessary if you have multiple Shuttle devices. In this case you may want to run a separate instance of shuttlepro for each of them (possibly with different configurations, using the `-r` option).
+If the program fails to find your device, you'll have to locate it yourself and specify the absolute pathname to it on the command line. On modern Linux systems, there should be an entry under /dev/input/by-id for it, which is simply a symbolic link to some device node under /dev/input. Look for devices having "Contour_Design", "CAVS" or "Shuttle" in their name.
+
+Naming the device on the command line will also be necessary if you have multiple Shuttle devices. In this case you may want to run a separate instance of shuttlepro for each of them (possibly with different configurations, using the `-r` option).
 
 If your device was found, you should be able to operate it now and have, e.g., the terminal window in which you launched the program scroll and execute mouse clicks if you move the jog wheel and press the three center buttons on the device. When you're finished, terminate the program by typing Ctrl+C in the terminal window where you launched it.
 
@@ -105,7 +109,7 @@ It goes without saying that these debugging options will be very helpful when yo
 
 ## MIDI Output
 
-If the shuttlepro program was built with Jack MIDI support, it can also be used to translate input from the Shuttle device to corresponding MIDI messages rather than key presses. This is useful if you want to hook up the device to any kind of MIDI-capable program, such as software synthesizers or a digital audio workstation (DAW) program like [Ardour][].
+If the shuttlepro program was built with Jack MIDI support, it can also be used to translate input from the Shuttle device to corresponding MIDI messages rather than key presses. This is useful if you want to hook up the device to any kind of MIDI-capable program, such as software synthesizers or digital audio workstation (DAW) programs like [Ardour][].
 
 [Ardour]: https://ardour.org/
 
@@ -208,7 +212,7 @@ K9 XK_Alt_L/D "v" XK_Alt_L/U "x" RELEASE "q"
 
 When the `K9` key is pressed, the key sequence `Alt+v x` is initiated, keeping the `x` key pressed (so it may start auto-repeating after a while). The program then sits there waiting (possibly executing other translations) until you release the `K9` key again, at which point the `x` key is released and the `q` key is pressed (and released).
 
-For the shuttle and jog wheel events there are no such separate press and release sequences. Only a single sequence is output whenever they are moved, and at the end of the sequence, all down keys will be released. For instance, the following translations move the cursor left or right when the jog wheel is rotated left or right, respectively. Also, the number of times one of the cursor keys is output corresponds to the actual change in the value. Thus, if in the example you move the jog wheel clockwise by 4 ticks, say, the program will press (and release) `XK_Right` four times, moving the cursor 4 positions to the right.
+For the shuttle and jog wheel events there are no such separate press and release sequences. Only a single sequence is output in this case, and at the end of the sequence, all down keys will be released. For instance, the following translations move the cursor left or right when the jog wheel is rotated left or right, respectively. Also, the number of times one of the cursor keys is output corresponds to the actual change in the value. Thus, if in the example you move the jog wheel clockwise by 4 ticks, say, the program will press (and release) `XK_Right` four times, moving the cursor 4 positions to the right.
 
 ~~~
 JL XK_Left
@@ -286,7 +290,7 @@ IR PB
 K5 PC5 RELEASE PC0
 ~~~
 
-**MIDI notes:** Like `PC` messages, these are most useful when bound to key inputs. The note starts (sending a note on MIDI message with maximum velocity) when pressing the key, and finishes (sending the corresponding note off message) when releasing the key. In jog and shuttle assignments, a pair of note on and note off messages is generated (again, this probably isn't very useful unless you bind it to the shuttle wheel).
+**MIDI notes:** Like `PC` messages, these are most useful when bound to key inputs. The note starts (sending a note on MIDI message with maximum velocity) when pressing the key, and finishes (sending the corresponding note off message) when releasing the key. In jog and shuttle assignments, a pair of note on/off messages is generated.
 
 **Example:** The following binds key K6 to a C-7 chord in the middle octave:
 
@@ -313,6 +317,14 @@ ShuttlePRO is free and open source software licensed under the GPLv3, please che
 Copyright 2013 Eric Messick (FixedImagePhoto.com/Contact)  
 Copyright 2018 Albert Graef (<aggraef@gmail.com>)
 
-ShuttlePRO was originally written in 2013 by Eric Messick, based on earlier code by Trammell Hudson (<hudson@osresearch.net>) and Arendt David (<admin@prnet.org>). The present version, by Albert Graef, offers some improvements, such as additional command line options, automatic detection of Shuttle devices, and, most notably, Jack MIDI support.
+Eric Messick wrote the [original ShuttlePRO version][nanosyzygy/ShuttlePRO] in 2013, based on earlier code by Trammell Hudson (<hudson@osresearch.net>) and Arendt David (<admin@prnet.org>). The [present version][agraef/ShuttlePRO], by Albert Graef, offers some improvements, such as additional command line options, automatic detection of Shuttle devices, and, most notably, Jack MIDI support.
 
-Eric's original README along with some accompanying (now largely obsolete) files can still be found in the attic subdirectory in the sources. You might want to consult these in order to get the program to work on older Linux systems.
+Note that Eric's original README along with some accompanying (now largely obsolete) files can still be found in the attic subdirectory in the sources. You might want to consult these in order to get the program to work on older Linux systems.
+
+There's another [version by Shamanon][Shamanon/ShuttlePRO] which includes some udev rules and a wrapper script to launch the program automatically when a Shuttle device is plugged into the computer. You might want to use these to enable hot-plugging on Linux. 
+
+ShuttlePRO relies on the Linux kernel driver for the Shuttle devices, and its keyboard and mouse support is tailored to X11, i.e., as far as I can tell it's pretty much tied to Linux and X11 right now. Hence there's no Mac or Windows version of the program; you'll have to use Contour Design's own software offerings for these systems.
+
+[nanosyzygy/ShuttlePRO]: https://github.com/nanosyzygy/ShuttlePRO
+[agraef/ShuttlePRO]: https://github.com/agraef/ShuttlePRO
+[Shamanon/ShuttlePRO]: https://github.com/Shamanon/ShuttlePRO
