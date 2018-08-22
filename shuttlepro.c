@@ -712,7 +712,9 @@ main(int argc, char **argv)
 	first_time = 0;
 	while (1) {
 	  // Bail out if Jack asked us to quit.
+#if HAVE_JACK
 	  if (jack_quit) exit(0);
+#endif
 	  nread = read(fd, &ev, sizeof(ev));
 	  if (nread == sizeof(ev)) {
 	    handle_event(ev);
