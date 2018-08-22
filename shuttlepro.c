@@ -669,9 +669,10 @@ main(int argc, char **argv)
   }
 
   if (optind >= argc) {
-    // Try to find a suitable device.
+    // Try to find a suitable device. The following glob pattern should
+    // hopefully cover all existing versions.
     glob_t globbuf;
-    if (glob("/dev/input/by-id/usb-Contour_Design_Shuttle*-event-if*",
+    if (glob("/dev/input/by-id/usb-*Shuttle*-event-if*",
 	     0, NULL, &globbuf)) {
       fprintf(stderr, "%s: found no suitable shuttle device\n", argv[0]);
       fprintf(stderr, "Please make sure that your shuttle device is connected.\n");
