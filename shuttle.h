@@ -106,6 +106,7 @@ typedef struct _translation {
   stroke *jog[NUM_JOGS];
 } translation;
 
+extern int read_config_file(void);
 extern translation *get_translation(char *win_title, char *win_class);
 extern void print_stroke_sequence(char *name, char *up_or_down, stroke *s);
 extern int debug_regex, debug_strokes, debug_keys;

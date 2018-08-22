@@ -33,7 +33,7 @@ There are various versions of these devices. The current line of products from C
 
 The shuttlepro program enables you to use these devices on Linux. It will work with any application taking X11 keyboard and mouse or MIDI input, without requiring any special support from the application. The program translates input events (button presses, jog and shuttle wheel movements) into X keystrokes, mouse button presses, scroll wheel events, or, as an option, MIDI output. It does this by matching the `WM_CLASS` and `WM_NAME` properties of the window that has the keyboard focus against the regular expressions for each application section in its configuration (shuttlerc) file. If a regex matches, the corresponding set of translations is used. If a matching section cannot be found, or if it doesn't define a suitable translation, the program falls back to a set of default translations at the end of the file, if available.
 
-The shuttlerc file is just an ordinary text file which you can edit to configure the program for your applications. A sample configuration file is included, see example.shuttlerc in the sources. This also gets installed as a system-wide configuration file, so that the program works out of the box with any of the preconfigured applications. At the time of this writing, there are ready-to-use translations for some popular video editors and a basic Mackie emulation which should work with most DAW (digital audio workstation) programs.
+The shuttlerc file is just an ordinary text file which you can edit to configure the program for your applications. A sample configuration file is included, see example.shuttlerc in the sources. This also gets installed as a system-wide configuration file, so that the program works out of the box with any of the preconfigured applications. At the time of this writing, there are ready-to-use translations for some popular video editors and a basic Mackie emulation which should work with most DAW (digital audio workstation) programs. Your contributions are appreciated, so if you have any interesting application configurations to share, please submit them at the [project page][agraef/ShuttlePRO]!
 
 ## Installation
 
@@ -55,7 +55,7 @@ After installation the system-wide default configuration file will be in /etc/sh
 
 The ~/.shuttlerc file, if it exists, takes priority over /etc/shuttlerc, so it becomes your personal shuttlepro configuration. You can edit this file as you see fit, in order to customize the configuration for the applications that you use.
 
-**NOTE:** The program re-reads its configuration file whenever it notices that the file has been changed. However, in the current implementation this check is only done when an input event arrives after the keyboard focus changed to a new window. Thus you can edit the file while the program keeps running, but you'll have to switch windows *and* operate the device to have the changes take effect.
+The program automatically reloads the configuration file whenever it notices that the file has been changed. Thus you can edit the file while the program keeps running, and have the changes take effect immediately without having to restart the program. The program also has a bunch of debugging options which let you to see exactly how your translations are being processed, which is very helpful when testing out new translations.
 
 # Usage
 
@@ -105,7 +105,7 @@ K5[D]: XK_Button_1/D
 K5[U]: XK_Button_1/U 
 ~~~
 
-It goes without saying that these debugging options will be very helpful when you start developing your own bindings.  The `-d` option can be combined with various option characters to choose exactly which kinds of debugging output you want; `r` ("regex") prints the matched translation section (if any) along with the window name and class of the focused window; `s` ("strokes") prints the parsed contents of the configuration file in a human-readable form whenever the file is loaded; `k` ("keys") shows the recognized translations as the program executes them, in the same format as `s`; and `j` adds some debugging output from the Jack driver. You can also just use `-d` to enable all debugging output. (Most of these options are also available as directives in the shuttlerc file; please check the distributed example.shuttlerc for details.)
+You *always* want to run shuttlepro with some or all of the debugging options when working on the translations. The `-d` option can be combined with various option characters to choose exactly which kinds of debugging output you want; `r` ("regex") prints the matched translation section (if any) along with the window name and class of the focused window; `s` ("strokes") prints the parsed contents of the configuration file in a human-readable form whenever the file is loaded; `k` ("keys") shows the recognized translations as the program executes them, in the same format as `s`; and `j` adds some debugging output from the Jack driver. You can also just use `-d` to enable all debugging output. (Most of these options are also available as directives in the shuttlerc file; please check the distributed example.shuttlerc for details.)
 
 ## MIDI Output
 
@@ -317,7 +317,7 @@ ShuttlePRO is free and open source software licensed under the GPLv3, please che
 Copyright 2013 Eric Messick (FixedImagePhoto.com/Contact)  
 Copyright 2018 Albert Graef (<aggraef@gmail.com>)
 
-Eric Messick wrote the [original ShuttlePRO version][nanosyzygy/ShuttlePRO] in 2013, based on earlier code by Trammell Hudson (<hudson@osresearch.net>) and Arendt David (<admin@prnet.org>). The [present version][agraef/ShuttlePRO], by Albert Graef, offers some improvements, such as additional command line options, automatic detection of Shuttle devices, and, most notably, Jack MIDI support.
+Eric Messick wrote the [original ShuttlePRO version][nanosyzygy/ShuttlePRO] in 2013, based on earlier code by Trammell Hudson (<hudson@osresearch.net>) and Arendt David (<admin@prnet.org>). The [present version][agraef/ShuttlePRO], by Albert Graef, offers some bug fixes and improvements, such as additional command line options, automatic detection of Shuttle devices, and, most notably, Jack MIDI support.
 
 Note that Eric's original README along with some accompanying (now largely obsolete) files can still be found in the attic subdirectory in the sources. You might want to consult these in order to get the program to work on older Linux systems.
 

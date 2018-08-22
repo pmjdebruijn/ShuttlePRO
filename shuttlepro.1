@@ -85,6 +85,9 @@ applications.
 At the time of this writing, there are ready\-to\-use translations for
 some popular video editors and a basic Mackie emulation which should
 work with most DAW (digital audio workstation) programs.
+Your contributions are appreciated, so if you have any interesting
+application configurations to share, please submit them at the project
+page (https://github.com/agraef/ShuttlePRO)!
 .SS Installation
 .PP
 First, make sure that you have the required dependencies installed.
@@ -131,13 +134,13 @@ so it becomes your personal shuttlepro configuration.
 You can edit this file as you see fit, in order to customize the
 configuration for the applications that you use.
 .PP
-\f[B]NOTE:\f[] The program re\-reads its configuration file whenever it
+The program automatically reloads the configuration file whenever it
 notices that the file has been changed.
-However, in the current implementation this check is only done when an
-input event arrives after the keyboard focus changed to a new window.
-Thus you can edit the file while the program keeps running, but you'll
-have to switch windows \f[I]and\f[] operate the device to have the
-changes take effect.
+Thus you can edit the file while the program keeps running, and have the
+changes take effect immediately without having to restart the program.
+The program also has a bunch of debugging options which let you to see
+exactly how your translations are being processed, which is very helpful
+when testing out new translations.
 .SH Usage
 .PP
 The shuttlepro program is a command line application, so you typically
@@ -251,8 +254,8 @@ K5[U]:\ XK_Button_1/U\
 \f[]
 .fi
 .PP
-It goes without saying that these debugging options will be very helpful
-when you start developing your own bindings.
+You \f[I]always\f[] want to run shuttlepro with some or all of the
+debugging options when working on the translations.
 The \f[C]\-d\f[] option can be combined with various option characters
 to choose exactly which kinds of debugging output you want; \f[C]r\f[]
 (\[lq]regex\[rq]) prints the matched translation section (if any) along
@@ -761,9 +764,9 @@ version (https://github.com/nanosyzygy/ShuttlePRO) in 2013, based on
 earlier code by Trammell Hudson (<hudson@osresearch.net>) and Arendt
 David (<admin@prnet.org>).
 The present version (https://github.com/agraef/ShuttlePRO), by Albert
-Graef, offers some improvements, such as additional command line
-options, automatic detection of Shuttle devices, and, most notably, Jack
-MIDI support.
+Graef, offers some bug fixes and improvements, such as additional
+command line options, automatic detection of Shuttle devices, and, most
+notably, Jack MIDI support.
 .PP
 Note that Eric's original README along with some accompanying (now
 largely obsolete) files can still be found in the attic subdirectory in

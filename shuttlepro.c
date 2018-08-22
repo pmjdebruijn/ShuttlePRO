@@ -697,6 +697,7 @@ main(int argc, char **argv)
   }
 #endif
 
+  time_t last_t = time(NULL);
   while (1) {
     fd = open(dev_name, O_RDONLY);
     if (fd < 0) {
@@ -716,6 +717,15 @@ main(int argc, char **argv)
 	  if (jack_quit) exit(0);
 #endif
 	  nread = read(fd, &ev, sizeof(ev));
+	  // Check whether to reload the config file in regular intervals.
+	  // Note that if the file *is* reloaded, then we also need to reset
+	  // last_focused_window here, so that the translations of the focused
+	  // window are recomputed the next time we handle an event.
+	  time_t t = time(NULL);
+	  if (t > last_t && read_config_file()) {
+	    last_focused_window = 0;
+	    last_t = t;
+	  }
 	  if (nread == sizeof(ev)) {
 	    handle_event(ev);
 	    // Make sure that debugging output gets flushed every once in a

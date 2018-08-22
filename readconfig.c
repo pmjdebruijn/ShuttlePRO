@@ -883,7 +883,7 @@ finish_translation(void)
   }
 }
 
-void
+int
 read_config_file(void)
 {
   struct stat buf;
@@ -919,7 +919,7 @@ read_config_file(void)
   }
   if (stat(config_file_name, &buf) < 0) {
     perror(config_file_name);
-    return;
+    return 0;
   }
   if (buf.st_mtime == 0) {
     buf.st_mtime = 1;
@@ -933,7 +933,7 @@ read_config_file(void)
     f = fopen(config_file_name, "r");
     if (f == NULL) {
       perror(config_file_name);
-      return;
+      return 0;
     }
 
     free_all_translations();
@@ -1056,8 +1056,10 @@ read_config_file(void)
     }
 
     fclose(f);
+    return 1;
 
   }
+  return 0;
 }
 
 translation *
