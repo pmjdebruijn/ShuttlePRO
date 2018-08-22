@@ -226,7 +226,7 @@ IL XK_Left
 IR XK_Right
 ~~~
 
-Or you can assign different output sequences to each of the 15 shuttle positions, using the `S-7` .. `S7` input events. For instance, the following might be used with the Kdenlive video editor:
+Or you can assign different output sequences to the 15 shuttle positions, using the `S-7` .. `S7` input events. For instance, you can use something like the following rules in order to control playback speed (rewind and fast forward) with the shuttle in the Kdenlive video editor:
 
 ~~~
 S-2 "KJJ"  # fast rewind
