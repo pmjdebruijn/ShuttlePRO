@@ -182,9 +182,11 @@
  K5 "I"         # Set In
  K9 "O"         # Set Out
 
-# Shotcut uses the customary J-K-L shortcuts, each successive J or L key then
-# increments the playback speed in the corresponding direction. Thus we can
-# simply treat the shuttle like a secondary jog wheel here.
+# In Shotcut the J and L shortcuts are accumulative, i.e., each
+# successive J and L key decrements and increments the playback speed,
+# respectively, with negative speeds indicating rewind, positive speeds
+# fast forward.  Thus we can simply treat the shuttle like a secondary
+# jog wheel here.
  IL "J"         # Rewind
  IR "L"         # Forward
 
@@ -196,7 +198,8 @@
 # Kdenlive has its own built-in support for the Shuttle, but as the
 # shuttlepro program blocks the device when it's running, we include
 # some sensible bindings here anyway (pretty much the same as Shotcut
-# above, but the shuttle has to be treated a little differently).
+# above, but the shuttle bindings are a bit more complicated, as in
+# contrast to Shotcut, the J and L keys aren't accumulative).
 
 [Kdenlive] ^kdenlive$
 
