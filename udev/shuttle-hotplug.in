@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# This is the hotplug script from https://github.com/Shamanon/ShuttlePRO,
+# slightly massaged to work with https://github.com/agraef/ShuttlePRO.
+
+myuser=($(users))
+
+while ! [ "$myuser" ]; do
+    sleep 10
+    myuser=($(users))
+done
+
+su $myuser -c "DISPLAY=:0 @prefix@/bin/shuttlepro -p $@"

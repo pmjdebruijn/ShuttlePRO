@@ -7,7 +7,7 @@
 shuttlepro \[en] translate input from the Contour Design Shuttle devices
 .SH Synopsis
 .PP
-shuttlepro [\-h] [\-o] [\-j \f[I]name\f[]] [\-r \f[I]rcfile\f[]]
+shuttlepro [\-h] [\-o] [\-p] [\-j \f[I]name\f[]] [\-r \f[I]rcfile\f[]]
 [\-d[rskj]] [\f[I]device\f[]]
 .SH Options
 .TP
@@ -18,6 +18,11 @@ Print a short help message.
 .TP
 .B \-o
 Enable MIDI output.
+.RS
+.RE
+.TP
+.B \-p
+Enable hot\-plugging support.
 .RS
 .RE
 .TP
@@ -116,6 +121,14 @@ Jack development files are detected at compile time.
 (If you do have Jack installed, but you still want to build a Jack\-less
 version of the program for some reason, you can do that by running
 \f[C]make\ JACK=\f[] instead of just \f[C]make\f[].)
+.PP
+Finally, if you also want hot\-plugging support, you can run
+\f[C]sudo\ make\ install\-udev\f[] to have the corresponding udev rules
+and helper script installed.
+However, we recommend that you first go without this, until you have
+everything set up as needed, and even then you should first read the
+\f[I]Hot\-Plugging\f[] section very carefully and note the caveats
+concerning this feature.
 .SH Configuration File
 .PP
 After installation the system\-wide default configuration file will be
@@ -143,14 +156,13 @@ exactly how your translations are being processed, which is very helpful
 when testing out new translations.
 .SH Usage
 .PP
-The shuttlepro program is a command line application, so you typically
-run it from the terminal.
-However, you can also launch it from your Jack session manager (see
-\f[I]MIDI Output\f[] below) or from your desktop environment's startup
-files once you've set up everything to your liking.
-Using the Linux udev system, it is also possible to recognize the device
-when it is plugged in, and have the shuttlepro program launched
-automatically; please check the \f[I]Notes\f[] section for details.
+The shuttlepro program is a command line application, so usually you run
+it from the terminal.
+However, once you've set up everything to your liking, you can also
+launch it from your Jack session manager (see \f[I]MIDI Output\f[]
+below), or from your desktop environment's startup files.
+Hot\-plugging support using the Linux udev system is also available;
+please check the \f[I]Hot\-Plugging\f[] section at the end for details.
 .PP
 Before you can use the program, you have to make sure that you can
 access the device.
@@ -164,6 +176,11 @@ sudo\ useradd\ \-G\ input\ username
 .fi
 .PP
 Log out and in again, and you should be set.
+(Another possibility is to use the hot\-plugging feature which will set
+the permissions of the device so that an ordinary user has access even
+without being member of the \f[C]input\f[] group; please check the
+\f[I]Hot\-Plugging\f[] section for details.)
+.PP
 Now make sure that your Shuttle device is connected, and try running
 \f[C]shuttlepro\f[] from the command line (without any arguments).
 The program should hopefully detect your device and print something
@@ -201,8 +218,18 @@ center buttons on the device.
 When you're finished, terminate the program by typing Ctrl+C in the
 terminal window where you launched it.
 .PP
-This default \[lq]mouse emulation mode\[rq] is actually configured in
-the \f[C][Default]\f[] section near the end of the distributed shuttlerc
+Note that once up, the program will just keep running, even if the
+device gets unplugged, in which case an error message will be printed
+and the program will keep trying to reopen the device until you
+interrupt it.
+However, there is an alternative mode available with the \f[C]\-p\f[]
+option, which makes sure that the program exits as soon as the device
+becomes unavailable.
+This is also used, in particular, when using the udev hot\-plugging
+facility mentioned above.
+.PP
+The default \[lq]mouse emulation mode\[rq] is actually configured in the
+\f[C][Default]\f[] section near the end of the distributed shuttlerc
 file, which reads as follows:
 .IP
 .nf
@@ -254,8 +281,9 @@ K5[U]:\ XK_Button_1/U\
 \f[]
 .fi
 .PP
-You \f[I]always\f[] want to run shuttlepro with some or all of the
-debugging options when working on the translations.
+We strongly recommend using the debugging options when editing the
+translations, so that you can see exactly what's going on if your
+translations don't appear to work correctly.
 The \f[C]\-d\f[] option can be combined with various option characters
 to choose exactly which kinds of debugging output you want; \f[C]r\f[]
 (\[lq]regex\[rq]) prints the matched translation section (if any) along
@@ -266,8 +294,8 @@ in a human\-readable form whenever the file is loaded; \f[C]k\f[]
 executes them, in the same format as \f[C]s\f[]; and \f[C]j\f[] adds
 some debugging output from the Jack driver.
 You can also just use \f[C]\-d\f[] to enable all debugging output.
-(Most of these options are also available as directives in the shuttlerc
-file; please check the distributed example.shuttlerc for details.)
+Most of these options are also available as directives in the shuttlerc
+file; please check the distributed example.shuttlerc for details.
 .SS MIDI Output
 .PP
 If the shuttlepro program was built with Jack MIDI support, it can also
@@ -309,8 +337,8 @@ Specifically, QjackCtl has its own built\-in Jack session manager which
 is available in its Session dialog.
 To use this, launch shuttlepro and any other Jack applications you want
 to have in the session, use QjackCtl to set up all the connections as
-needed, and then the \[lq]Save\[rq] option in the Session dialog to have
-the session recorded.
+needed, and then hit the \[lq]Save\[rq] option in the Session dialog to
+have the session recorded.
 Now, at any later time you can relaunch the same session with the
 \[lq]Load\[rq] option in the same dialog.
 .PP
@@ -749,6 +777,56 @@ Note that this transposes \f[I]all\f[] existing notes in translations
 following the directive, so if you add this option to an existing
 configuration, you probably have to edit the note messages in it
 accordingly.
+.SH Hot\-Plugging
+.PP
+It is possible to use the Linux udev system to have the shuttlepro
+program invoked automatically whenever a Shuttle device is plugged into
+the computer.
+However, before you do this please note the following caveats:
+.IP \[bu] 2
+The hot\-plugging feature interferes with regular use of the program
+because shuttlepro needs exclusive access to the device.
+In other words, once you've set up shuttlepro hot\-plugging, you won't
+be able to run it from the command line any more.
+(Unless you manually kill the auto\-launched shuttlepro process first,
+that is.
+And it will keep coming back each time you plug in the device.)
+.IP \[bu] 2
+There's no (easy) way to see the output from the program, so you can't
+debug your translations any more.
+Thus you want to make sure that you have your shuttlepro configuration
+set up beforehand.
+.IP \[bu] 2
+Using hot\-plugging with MIDI output is \f[I]not\f[] recommended,
+because shuttlepro will then also start up Jack for you, which you
+probably don't want if you're using Jack for anything else.
+If you need MIDI output, consider using Jack session management instead,
+as discussed in the \f[I]MIDI Output\f[] section.
+.PP
+That said, the hot\-plugging feature \f[I]is\f[] very convenient, and it
+can be installed and uninstalled very easily:
+.IP \[bu] 2
+Run \f[C]sudo\ make\ install\-udev\f[] in the source directory to enable
+hot\-plugging.
+Plug in the device and check that everything's working.
+.IP \[bu] 2
+Run \f[C]sudo\ make\ uninstall\-udev\f[] to disable hot\-plugging again.
+Unplug the device, and everything should be back to normal.
+.PP
+Note that the \f[C]install\-udev\f[] target just installs the necessary
+udev rules and a little helper script to launch shuttlepro, and
+\f[C]uninstall\-udev\f[] removes those files again, that's all.
+Normally, the changes should be picked up automatically.
+(If not, a reboot might be in order.) A quick way to check that
+hot\-plugging is working is to plug in the device and run
+\f[C]pgrep\ \-a\ shuttlepro\f[] to make sure that the shuttlepro process
+has been launched.
+.PP
+You can also edit the shuttle\-hotplug script (which will end up in
+/usr/local/bin by default) if you need to add some options to the
+shuttlepro command.
+As shipped, the script just runs \f[C]shuttlepro\ \-p\f[], so there's no
+MIDI output and the default configuration file will be used.
 .SH Notes
 .PP
 ShuttlePRO is free and open source software licensed under the GPLv3,
@@ -760,26 +838,26 @@ Copyright 2013 Eric Messick (FixedImagePhoto.com/Contact)
 .PD
 Copyright 2018 Albert Graef (<aggraef@gmail.com>)
 .PP
-Eric Messick wrote the original ShuttlePRO
-version (https://github.com/nanosyzygy/ShuttlePRO) in 2013, based on
+The sources of this program can be found on
+Github (https://github.com/agraef/ShuttlePRO).
+This is a fork of Eric Messick's original
+version (https://github.com/nanosyzygy/ShuttlePRO) which doesn't seem to
+be maintained any longer.
+.PP
+Eric Messick wrote the original ShuttlePRO version in 2013, based on
 earlier code by Trammell Hudson (<hudson@osresearch.net>) and Arendt
 David (<admin@prnet.org>).
-The present version (https://github.com/agraef/ShuttlePRO), by Albert
-Graef, offers some bug fixes and improvements, such as additional
-command line options, automatic detection of Shuttle devices, and, most
-notably, Jack MIDI support.
+The present version, by Albert Graef, offers some bug fixes and
+improvements, such as additional command line options, automatic
+detection of Shuttle devices, and, most notably, Jack MIDI support.
 .PP
-Note that Eric's original README along with some accompanying (now
-largely obsolete) files can still be found in the attic subdirectory in
-the sources.
+Eric's original README along with some accompanying files can still be
+found in the attic subdirectory in the sources.
 You might want to consult these in order to get the program to work on
 older Linux systems.
 .PP
-There's another version by
-Shamanon (https://github.com/Shamanon/ShuttlePRO) which includes some
-udev rules and a wrapper script to launch the program automatically when
-a Shuttle device is plugged into the computer.
-You might want to use these to enable hot\-plugging on Linux.
+The udev hot\-plugging configuration contained in the udev subdirectory
+is based on Shamanon's source (https://github.com/Shamanon/ShuttlePRO).
 .PP
 ShuttlePRO relies on the Linux kernel driver for the Shuttle devices,
 and its keyboard and mouse support is tailored to X11, i.e., as far as I

@@ -1,5 +1,6 @@
 
 # Copyright 2013 Eric Messick (FixedImagePhoto.com/Contact)
+# Copyright 2018 Albert Graef (aggraef@gmail.com)
 
 #CFLAGS=-g -W -Wall
 CFLAGS=-O3 -W -Wall
@@ -8,6 +9,7 @@ prefix=/usr/local
 bindir=$(DESTDIR)$(prefix)/bin
 mandir=$(DESTDIR)$(prefix)/share/man/man1
 datadir=$(DESTDIR)/etc
+udevdir=$(DESTDIR)/etc/udev/rules.d
 
 # Check to see whether we have Jack installed. Needs pkg-config.
 JACK := $(shell pkg-config --libs jack 2>/dev/null)
@@ -60,6 +62,25 @@ shuttlepro.pdf: shuttlepro.1
 # This assumes that man does the right thing when given a file instead of a
 # program name, and that it understands groff's -T option.
 	man -Tpdf ./shuttlepro.1 > $@
+
+# Shamanon's udev hotplugging. *Only* install these if you're know what you're
+# doing! (See the Hotplugging section in the manual for details.)
+udev-rules = $(patsubst %.rules.in, %.rules, $(wildcard udev/*.rules.in))
+
+%.rules: %.rules.in
+	sed -e 's:@prefix@:$(prefix):g' < $< > $@
+
+udev/shuttle-hotplug: udev/shuttle-hotplug.in
+	sed -e 's:@prefix@:$(prefix):g' < $< > $@
+
+install-udev: $(udev-rules) udev/shuttle-hotplug
+	install -d $(bindir) $(udevdir)
+	install udev/shuttle-hotplug $(bindir)
+	install -m 0644 $(udev-rules) $(udevdir)
+	rm -f $(udev-rules) udev/shuttle-hotplug
+
+uninstall-udev:
+	rm -f $(bindir)/shuttle-hotplug $(addprefix $(udevdir)/, $(notdir $(udev-rules)))
 
 clean:
 	rm -f shuttlepro keys.h $(OBJ)

@@ -510,9 +510,10 @@ handle_event(EV ev)
 
 void help(char *progname)
 {
-  fprintf(stderr, "Usage: %s [-h] [-o] [-j name] [-r rcfile] [-d[rskj]] [device]\n", progname);
+  fprintf(stderr, "Usage: %s [-h] [-o] [-p] [-j name] [-r rcfile] [-d[rskj]] [device]\n", progname);
   fprintf(stderr, "-h print this message\n");
   fprintf(stderr, "-o enable MIDI output\n");
+  fprintf(stderr, "-p enable hot-plugging\n");
   fprintf(stderr, "-j jack client name (default: shuttlepro)\n");
   fprintf(stderr, "-r config file name (default: SHUTTLE_CONFIG_FILE variable or ~/.shuttlerc)\n");
   fprintf(stderr, "-d debug (r = regex, s = strokes, k = keys, j = jack; default: all)\n");
@@ -598,16 +599,20 @@ main(int argc, char **argv)
 #endif
   int fd;
   int first_time = 1;
-  int opt;
+  int opt, hotplug = 0;
 
   // Start recording the command line to be passed to Jack session management.
   add_command(argv[0]);
 
-  while ((opt = getopt(argc, argv, "hod::j:r:")) != -1) {
+  while ((opt = getopt(argc, argv, "hopd::j:r:")) != -1) {
     switch (opt) {
     case 'h':
       help(argv[0]);
       exit(0);
+    case 'p':
+      hotplug = 1;
+      add_command("-p");
+      break;
     case 'o':
 #if HAVE_JACK
       enable_jack = 1;
@@ -722,7 +727,10 @@ main(int argc, char **argv)
 	first_time = 0;
 	while (!quit) {
 	  nread = read(fd, &ev, sizeof(ev));
-	  if (nread < 0 && quit) break;
+	  if (nread < 0 && (hotplug || quit)) {
+	    quit = 1;
+	    break;
+	  }
 	  // Check whether to reload the config file in regular intervals.
 	  // Note that if the file *is* reloaded, then we also need to reset
 	  // last_focused_window here, so that the translations of the focused

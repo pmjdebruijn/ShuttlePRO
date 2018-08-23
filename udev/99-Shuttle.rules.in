@@ -1,0 +1,12 @@
+# Allows global read access to any Shuttle device and autostarts shuttle app
+
+# install this file in /etc/udev/rules.d
+
+# ShuttlePRO
+ACTION=="add", ATTRS{name}=="Contour Design ShuttlePRO v2", MODE="0644", RUN+="@prefix@/bin/shuttle-hotplug /dev/input/by-id/usb-Contour_Design_ShuttlePRO_v2-event-if00 &"
+
+# ShuttleXpress
+ACTION=="add", ATTRS{name}=="Contour Design ShuttleXpress", MODE="0644", RUN+="@prefix@/bin/shuttle-hotplug /dev/input/by-id/usb-Contour_Design_ShuttleXpress-event-if00 &" 
+
+# SpaceShuttle
+ACTION=="add", ATTRS{name}=="CAVS SpaceShuttle A/V", MODE="0644", RUN+="@prefix@/bin/shuttle-hotplug /dev/input/by-id/usb-CAVS_SpaceShuttle_A_V-event-if00 &"
