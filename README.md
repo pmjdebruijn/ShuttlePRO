@@ -129,7 +129,7 @@ We recommend using a Jack front-end and patchbay program like [QjackCtl][] to ma
 [QjackCtl]: https://qjackctl.sourceforge.io/
 [a2jmidid]: http://repo.or.cz/a2jmidid.git
 
-The shuttlepro program also supports Jack session management, which makes it possible to record the options the program was invoked with along with the MIDI connections. This feature can be used with any Jack session management software. Specifically, QjackCtl has its own built-in Jack session manager which is available in its Session dialog. To use this, launch shuttlepro and any other Jack applications you want to have in the session, use QjackCtl to set up all the connections as needed, and then hit the "Save" option in the Session dialog to have the session recorded. Now, at any later time you can relaunch the same session with the "Load" option in the same dialog.
+The shuttlepro program also supports Jack session management, which makes it possible to record the options the program was invoked with along with the MIDI connections. This feature can be used with any Jack session management software. Specifically, QjackCtl has its own built-in Jack session manager which is available in its Session dialog. To use this, launch shuttlepro and any other Jack applications you want to have in the session, use QjackCtl to set up all the connections as needed, and then hit the "Save" button in the Session dialog to have the session recorded. Now, at any later time you can relaunch the same session with the "Load" button in the same dialog.
 
 The example.shuttlerc file comes with a sample configuration in the `[MIDI]` section for illustration purposes. This special default section is only active if the program is run with the `-o` option. It allows MIDI output to be sent to any connected applications, no matter which window currently has the keyboard focus. This is probably the most common way to use this feature, but of course it is also possible to have application-specific MIDI translations, in the same way as with X11 key bindings. In fact, you can freely mix mouse actions, key presses and MIDI messages in all translations.
 
@@ -348,7 +348,7 @@ Copyright 2018 Albert Graef (<aggraef@gmail.com>)
 
 The sources of this program can be found on [Github][agraef/ShuttlePRO]. This is a fork of Eric Messick's [original version][nanosyzygy/ShuttlePRO] which doesn't seem to be maintained any longer.
 
-Eric Messick wrote the original ShuttlePRO version in 2013, based on earlier code by Trammell Hudson (<hudson@osresearch.net>) and Arendt David (<admin@prnet.org>). The present version, by Albert Graef, offers some bug fixes and improvements, such as additional command line options, automatic detection of Shuttle devices, and, most notably, Jack MIDI support.
+Eric Messick wrote the original ShuttlePRO version in 2013, based on earlier code by Trammell Hudson and Arendt David. The present version, by Albert Graef, offers some bug fixes and improvements, such as additional command line options, automatic detection of Shuttle devices, and, most notably, Jack MIDI support.
 
 Eric's original README along with some accompanying files can still be found in the attic subdirectory in the sources. You might want to consult these in order to get the program to work on older Linux systems.
 
