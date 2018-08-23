@@ -17,7 +17,7 @@ shuttlepro [-h] [-o] [-p] [-j *name*] [-r *rcfile*] [-d[rskj]] [*device*]
 :   Enable MIDI output.
 
 -p
-:   Enable hot-plugging support.
+:   Enable hotplugging support.
 
 -j *name*
 :   Set the Jack client name. Default: "shuttlepro".
@@ -48,7 +48,7 @@ Then just run `make` and `sudo make install`. This installs the example.shuttler
 
 The program will automatically be built with Jack MIDI support if the Jack development files are detected at compile time. (If you do have Jack installed, but you still want to build a Jack-less version of the program for some reason, you can do that by running `make JACK=` instead of just `make`.)
 
-Finally, if you also want hot-plugging support, you can run `sudo make install-udev` to have the corresponding udev rules and helper script installed. However, we recommend that you first go without this, until you have everything set up as needed, and even then you should first read the *Hot-Plugging* section very carefully and note the caveats concerning this feature.
+Finally, if you also want hotplugging support, you can run `sudo make install-udev` to have the corresponding udev rules and helper script installed. (If you specified the `prefix` variable during `make install`, the same value should be used here, so that the proper absolute path to the shuttlepro program gets inserted into the helper script.) However, we recommend that you first go without this, until you have everything set up as needed, and even then you should first read the *Hotplugging* section at the end of this manual and note the caveats concerning this feature.
 
 [Jack]: http://jackaudio.org/
 
@@ -64,13 +64,13 @@ The program automatically reloads the configuration file whenever it notices tha
 
 # Usage
 
-The shuttlepro program is a command line application, so usually you run it from the terminal. However, once you've set up everything to your liking, you can also launch it from your Jack session manager (see *MIDI Output* below), or from your desktop environment's startup files. Hot-plugging support using the Linux udev system is also available; please check the *Hot-Plugging* section at the end for details.
+The shuttlepro program is a command line application, so usually you run it from the terminal. However, once you've set up everything to your liking, you can also launch it from your Jack session manager (see *MIDI Output* below), or from your desktop environment's startup files. Hotplugging support using the Linux udev system is also available; please check the *Hotplugging* section below for details.
 
 Before you can use the program, you have to make sure that you can access the device. On modern Linux systems, becoming a member of the `input` group should be all that is needed:
 
     sudo useradd -G input username
 
-Log out and in again, and you should be set. (Another possibility is to use the hot-plugging feature which will set the permissions of the device so that an ordinary user has access even without being member of the `input` group; please check the *Hot-Plugging* section for details.)
+Log out and in again, and you should be set. (Another possibility is to use the hotplugging feature which will set the permissions of the device so that an ordinary user has access even without being member of the `input` group; please check the *Hotplugging* section for details.)
 
 Now make sure that your Shuttle device is connected, and try running `shuttlepro` from the command line (without any arguments). The program should hopefully detect your device and print something like:
 
@@ -85,7 +85,7 @@ Naming the device on the command line will also be necessary if you have multipl
 
 If your device was found, you should be able to operate it now and have, e.g., the terminal window in which you launched the program scroll and execute mouse clicks if you move the jog wheel and press the three center buttons on the device. When you're finished, terminate the program by typing Ctrl+C in the terminal window where you launched it.
 
-Note that once up, the program will just keep running, even if the device gets unplugged, in which case an error message will be printed and the program will keep trying to reopen the device until you interrupt it. However, there is an alternative mode available with the `-p` option, which makes sure that the program exits as soon as the device becomes unavailable. This is also used, in particular, when using the udev hot-plugging facility mentioned above.
+Note that once up, the program will just keep running, even if the device gets unplugged, in which case an error message will be printed and the program will keep trying to reopen the device until you interrupt it. However, there is an alternative mode available with the `-p` option, which makes sure that the program exits as soon as the device becomes unavailable. This is also used, in particular, when using the udev hotplugging facility mentioned above.
 
 The default "mouse emulation mode" is actually configured in the `[Default]` section near the end of the distributed shuttlerc file, which reads as follows:
 
@@ -319,23 +319,23 @@ MIDI_OCTAVE -1 # ASA pitches (middle C is C4)
 
 Note that this transposes *all* existing notes in translations following the directive, so if you add this option to an existing configuration, you probably have to edit the note messages in it accordingly.
 
-# Hot-Plugging
+# Hotplugging
 
 It is possible to use the Linux udev system to have the shuttlepro program invoked automatically whenever a Shuttle device is plugged into the computer. However, before you do this please note the following caveats:
 
-- The hot-plugging feature interferes with regular use of the program because shuttlepro needs exclusive access to the device. In other words, once you've set up shuttlepro hot-plugging, you won't be able to run it from the command line any more. (Unless you manually kill the auto-launched shuttlepro process first, that is. And it will keep coming back each time you plug in the device.)
+- The hotplugging feature interferes with regular use of the program because shuttlepro needs exclusive access to the device. In other words, once you've set up hotplugging, you won't be able to run the program from the command line any more. (Unless you manually kill the auto-launched shuttlepro process first, that is. And it will keep coming back each time you plug in the device.)
 
-- There's no (easy) way to see the output from the program, so you can't debug your translations any more. Thus you want to make sure that you have your shuttlepro configuration set up beforehand.
+- With hotplugging, there's no (easy) way to see the output from the program, so you can't debug your translations any more. Thus you want to make sure that you have your shuttlepro configuration set up beforehand.
 
-- Using hot-plugging with MIDI output is *not* recommended, because shuttlepro will then also start up Jack for you, which you probably don't want if you're using Jack for anything else. If you need MIDI output, consider using Jack session management instead, as discussed in the *MIDI Output* section.
+- Using hotplugging with MIDI output is *not* recommended, because shuttlepro will then also start up Jack for you, which you probably don't want if you're using Jack for anything else. If you need MIDI output, consider using Jack session management instead, as discussed in the *MIDI Output* section.
 
-That said, the hot-plugging feature *is* very convenient, and it can be installed and uninstalled very easily:
+That said, of course the hotplugging feature *is* very convenient in many situations, and it can be installed and uninstalled very easily:
 
-- Run `sudo make install-udev` in the source directory to enable hot-plugging. Plug in the device and check that everything's working.
+- Run `sudo make install-udev` in the source directory to enable hotplugging. Now, whenever you plug in the device, shuttlepro should be invoked automatically, and exit as soon as the device is unplugged. You can check that it works by looking for the shuttlepro process in your process monitor (or by running `pgrep -a shuttlepro`).
 
-- Run `sudo make uninstall-udev` to disable hot-plugging again. Unplug the device, and everything should be back to normal.
+- Run `sudo make uninstall-udev` to disable hotplugging again. Unplug the device, and everything should be back to normal.
 
-Note that the `install-udev` target just installs the necessary udev rules and a little helper script to launch shuttlepro, and `uninstall-udev` removes those files again, that's all. Normally, the changes should be picked up automatically. (If not, a reboot might be in order.) A quick way to check that hot-plugging is working is to plug in the device and run `pgrep -a shuttlepro` to make sure that the shuttlepro process has been launched.
+Note that the `install-udev` target just installs the necessary udev rules and a little helper script to launch shuttlepro, and `uninstall-udev` removes those files again, that's all. Normally, udev should pick up the changes automatically. (If not, a reboot might be in order.)
 
 You can also edit the shuttle-hotplug script (which will end up in /usr/local/bin by default) if you need to add some options to the shuttlepro command. As shipped, the script just runs `shuttlepro -p`, so there's no MIDI output and the default configuration file will be used.
 
@@ -352,7 +352,7 @@ Eric Messick wrote the original ShuttlePRO version in 2013, based on earlier cod
 
 Eric's original README along with some accompanying files can still be found in the attic subdirectory in the sources. You might want to consult these in order to get the program to work on older Linux systems.
 
-The udev hot-plugging configuration contained in the udev subdirectory is based on [Shamanon's source][Shamanon/ShuttlePRO].
+The udev hotplugging configuration contained in the udev subdirectory is based on [Shamanon's source][Shamanon/ShuttlePRO].
 
 ShuttlePRO relies on the Linux kernel driver for the Shuttle devices, and its keyboard and mouse support is tailored to X11, i.e., as far as I can tell it's pretty much tied to Linux and X11 right now. Hence there's no Mac or Windows version of the program; you'll have to use Contour Design's own software offerings for these systems.
 
