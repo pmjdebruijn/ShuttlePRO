@@ -68,7 +68,7 @@ The shuttlepro program is a command line application, so usually you run it from
 
 Before you can use the program, you have to make sure that you can access the device. On modern Linux systems, becoming a member of the `input` group should be all that is needed:
 
-    sudo useradd -G input username
+    sudo usermod -a -G input username
 
 Log out and in again, and you should be set. (Another possibility is to use the hotplugging feature which will set the permissions of the device so that an ordinary user has access even without being member of the `input` group; please check the *Hotplugging* section for details.)
 
