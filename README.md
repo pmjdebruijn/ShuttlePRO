@@ -149,7 +149,7 @@ The sample `[MIDI]` section implements a simplistic DAW controller which can be 
  IR G#7 # Fast Forward
  S0 A7  # Stop
 
- # MCU jog wheel
+ # Mackie jog wheel
  JL CC60~
  JR CC60~
 ~~~
@@ -170,9 +170,9 @@ I<LR>    output # shuttle rotation
 J<LR>    output # jog wheel rotation 
 ~~~
 
-The `#` character at the beginning of a line and after whitespace is special; it indicates that the rest of the line is a comment, which is skipped by the parser. Empty lines and lines containing nothing but whitespace are also ignored.
+The `#` character at the beginning of a line and after whitespace is special; it indicates that the rest of the line is a comment, which is skipped by the parser. Empty lines and lines containing nothing but whitespace are also generally ignored. (An exception is the section header which is taken verbatim, so that the name and/or the regular expression of a translation class may contain literal whitespace and `#`.)
 
-Each `[name] regex` line introduces the list of translations for the named translation class. The name is only used for debugging output, and needn't be unique. When focus is on a window whose class or title matches the regular expression `regex`, the corresponding translations are in effect. An empty regex for the last class will always match, allowing default translations. Any output sequences not bound in a matched section will be loaded from the default section if they are bound there.
+Each `[`*name*`]` *regex* line introduces the list of translations for the named translation class. The given *name* is only used for debugging output, and needn't be unique. The *regex* part can be any regular expression using the egrep a.k.a.\ "extended" syntax, cf. regex(7). When focus is on a window whose class or title matches *regex*, the corresponding translations are in effect. An empty *regex* for the last class will always match, allowing default translations. Any output sequences not bound in a matched section will be loaded from the default section if they are bound there.
 
 The translations define what output should be produced for the given input. Each translation must be on a line by itself. The first token of each translation denotes the key, shuttle or jog wheel event to be translated:
 
@@ -211,7 +211,7 @@ K8 "V" XK_Left XK_Page_Up "v"
 K9 XK_Alt_L/D "v" XK_Alt_L/U "x" RELEASE "q"
 ~~~
 
-One pitfall for beginners is that character strings in double quotes are just a shorthand for the corresponding X key codes, ignoring case. Thus, e.g., `"abc"` actually denotes the keysym sequence `XK_a XK_b XK_c`, as does `"ABC"`. So in either case the *lowercase* string `abc` will be output. To output uppercase letters, it is always necessary to add one of the shift modifiers to the output sequence. E.g., `XK_Shift_L/D "abc"` will output `ABC` in uppercase.
+One pitfall here is that character strings in double quotes are just a shorthand for the corresponding X key codes, ignoring case. Thus, e.g., `"abc"` actually denotes the keysym sequence `XK_a XK_b XK_c`, as does `"ABC"`. So in either case the *lowercase* string `abc` will be output. To output uppercase letters, it is always necessary to add one of the shift modifiers to the output sequence. E.g., `XK_Shift_L/D "abc"` will output `ABC` in uppercase.
 
 Translations are handled in slightly different ways depending on the type of input event. For key inputs (`K`), there are separate separate press and release sequences. At the end of the press sequence, all down keys marked by `/D` will be released, and the last key not marked by `/D`, `/U`, or `/H` will remain pressed. The release sequence will begin by releasing the last held key. If keys are to be pressed as part of the release sequence, then any keys marked with `/D` will be repressed before continuing the sequence. Keycodes marked with `/H` remain held between the press and release sequences. For instance, let's take a look at one of the more conspicuous translations in the example above:
 
@@ -261,7 +261,7 @@ Case is ignored here, so `CC`, `cc` or even `Cc` are considered to be exactly th
 
 MIDI messages are on channel 1 by default, but you can change this with a dash followed by the desired channel number (1..16). E.g., `C3-10` denotes note `C3` on MIDI channel 10. If multiple messages are output on the same MIDI channel, then you can also use the special `CH` token, which doesn't generate any output by itself, but sets the default channel for subsequent MIDI messages in the sequence. For instance, the sequence `C5-2 E5-2 G5-2`, which outputs a C major chord on MIDI channel 2, can also be abbreviated as `CH2 C5 E5 G5`.
 
-Note messages are specified using the customary notation (note name `A..G`, optionally followed by an accidental, `#` or `b`, followed by the MIDI octave number. Note that all MIDI octaves start at the note C, so `B0` comes before `C1`. By default, `C5` denotes middle C (see Section *Octave Numbering* below on how to change this). Enharmonic spellings are equivalent, so, e.g., `D#` and `Eb` denote exactly the same MIDI note.
+Note messages are specified using the customary notation (note name `A..G`, optionally followed by an accidental, `#` or `b`, followed by the MIDI octave number). Note that all MIDI octaves start at the note C, so `B0` comes before `C1`. By default, `C5` denotes middle C (see Section *Octave Numbering* below on how to change this). Enharmonic spellings are equivalent, so, e.g., `D#` and `Eb` denote exactly the same MIDI note.
 
 Here is a quick rundown of the recognized MIDI messages, with an explanation of how they work.
 
@@ -275,7 +275,7 @@ JR CC7
 K5 CC1
 ~~~
 
-When used with the jog wheel, you can also generate relative control changes in a special "sign bit" format which is commonly used for endless rotary controllers. In this case, a +1 change is represented by the controller value 1, and a -1 change by 65 (a 1 with the sign in the 7th bit). This special mode of operation is indicated with the `~` suffix. E.g., here's how to bind an MCU-style jog wheel (`CC60`) event to the Shuttle's jog wheel:
+When used with the jog wheel, you can also generate relative control changes in a special "sign bit" format which is commonly used for endless rotary controllers. In this case, a +1 change is represented by the controller value 1, and a -1 change by 65 (a 1 with the sign in the 7th bit). This special mode of operation is indicated with the `~` suffix. E.g., here's how to bind an Mackie-style jog wheel (`CC60`) event to the Shuttle's jog wheel:
 
 ~~~
 JL CC60~
@@ -349,6 +349,8 @@ Copyright 2018 Albert Graef (<aggraef@gmail.com>)
 The sources of this program can be found on [Github][agraef/ShuttlePRO]. This is a fork of Eric Messick's [original version][nanosyzygy/ShuttlePRO] which doesn't seem to be maintained any longer.
 
 Eric Messick wrote the original ShuttlePRO version in 2013, based on earlier code by Trammell Hudson and Arendt David. The present version, by Albert Graef, offers some bug fixes and improvements, such as additional command line options, automatic detection of Shuttle devices, and, most notably, Jack MIDI support.
+
+Note that while the original ShuttlePRO still uses basic regular expressions which are considered largely obsolete these days, this version uses modern (extended) regexes for matching translation sections instead. This introduces slight incompatibilities, but generally most configurations written for Eric's original ShuttlePRO program should also work with the present version. In the worst case, you may have to escape some characters which have a special meaning in extended regexes, see regex(7) for details.
 
 Eric's original README along with some accompanying files can still be found in the attic subdirectory in the sources. You might want to consult these in order to get the program to work on older Linux systems.
 

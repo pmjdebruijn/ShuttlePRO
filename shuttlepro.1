@@ -379,7 +379,7 @@ The configuration entry looks as follows:
 \ IR\ G#7\ #\ Fast\ Forward
 \ S0\ A7\ \ #\ Stop
 
-\ #\ MCU\ jog\ wheel
+\ #\ Mackie\ jog\ wheel
 \ JL\ CC60~
 \ JR\ CC60~
 \f[]
@@ -416,15 +416,21 @@ The \f[C]#\f[] character at the beginning of a line and after whitespace
 is special; it indicates that the rest of the line is a comment, which
 is skipped by the parser.
 Empty lines and lines containing nothing but whitespace are also
-ignored.
+generally ignored.
+(An exception is the section header which is taken verbatim, so that the
+name and/or the regular expression of a translation class may contain
+literal whitespace and \f[C]#\f[].)
 .PP
-Each \f[C][name]\ regex\f[] line introduces the list of translations for
-the named translation class.
-The name is only used for debugging output, and needn't be unique.
-When focus is on a window whose class or title matches the regular
-expression \f[C]regex\f[], the corresponding translations are in effect.
-An empty regex for the last class will always match, allowing default
-translations.
+Each \f[C][\f[]\f[I]name\f[]\f[C]]\f[] \f[I]regex\f[] line introduces
+the list of translations for the named translation class.
+The given \f[I]name\f[] is only used for debugging output, and needn't
+be unique.
+The \f[I]regex\f[] part can be any regular expression using the egrep
+a.k.a.\ \[lq]extended\[rq] syntax, cf.\ regex(7).
+When focus is on a window whose class or title matches \f[I]regex\f[],
+the corresponding translations are in effect.
+An empty \f[I]regex\f[] for the last class will always match, allowing
+default translations.
 Any output sequences not bound in a matched section will be loaded from
 the default section if they are bound there.
 .PP
@@ -502,8 +508,8 @@ K9\ XK_Alt_L/D\ "v"\ XK_Alt_L/U\ "x"\ RELEASE\ "q"
 \f[]
 .fi
 .PP
-One pitfall for beginners is that character strings in double quotes are
-just a shorthand for the corresponding X key codes, ignoring case.
+One pitfall here is that character strings in double quotes are just a
+shorthand for the corresponding X key codes, ignoring case.
 Thus, e.g., \f[C]"abc"\f[] actually denotes the keysym sequence
 \f[C]XK_a\ XK_b\ XK_c\f[], as does \f[C]"ABC"\f[].
 So in either case the \f[I]lowercase\f[] string \f[C]abc\f[] will be
@@ -636,7 +642,7 @@ C major chord on MIDI channel 2, can also be abbreviated as
 .PP
 Note messages are specified using the customary notation (note name
 \f[C]A..G\f[], optionally followed by an accidental, \f[C]#\f[] or
-\f[C]b\f[], followed by the MIDI octave number.
+\f[C]b\f[], followed by the MIDI octave number).
 Note that all MIDI octaves start at the note C, so \f[C]B0\f[] comes
 before \f[C]C1\f[].
 By default, \f[C]C5\f[] denotes middle C (see Section \f[I]Octave
@@ -675,8 +681,8 @@ for endless rotary controllers.
 In this case, a +1 change is represented by the controller value 1, and
 a \-1 change by 65 (a 1 with the sign in the 7th bit).
 This special mode of operation is indicated with the \f[C]~\f[] suffix.
-E.g., here's how to bind an MCU\-style jog wheel (\f[C]CC60\f[]) event
-to the Shuttle's jog wheel:
+E.g., here's how to bind an Mackie\-style jog wheel (\f[C]CC60\f[])
+event to the Shuttle's jog wheel:
 .IP
 .nf
 \f[C]
@@ -852,6 +858,16 @@ earlier code by Trammell Hudson and Arendt David.
 The present version, by Albert Graef, offers some bug fixes and
 improvements, such as additional command line options, automatic
 detection of Shuttle devices, and, most notably, Jack MIDI support.
+.PP
+Note that while the original ShuttlePRO still uses basic regular
+expressions which are considered largely obsolete these days, this
+version uses modern (extended) regexes for matching translation sections
+instead.
+This introduces slight incompatibilities, but generally most
+configurations written for Eric's original ShuttlePRO program should
+also work with the present version.
+In the worst case, you may have to escape some characters which have a
+special meaning in extended regexes, see regex(7) for details.
 .PP
 Eric's original README along with some accompanying files can still be
 found in the attic subdirectory in the sources.
