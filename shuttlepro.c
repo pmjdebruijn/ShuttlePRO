@@ -224,6 +224,9 @@ jogshuttle(unsigned short code, unsigned int value, translation *tr)
   case EVENT_CODE_SHUTTLE:
     shuttle(value, tr);
     break;
+  case EVENT_CODE_SHUTTLE_IGNORE:
+    // dont flood useless invalid code messages
+    break;
   default:
     fprintf(stderr, "jogshuttle(%d, %d) invalid code\n", code, value);
     break;
