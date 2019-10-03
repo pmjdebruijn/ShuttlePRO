@@ -62,7 +62,12 @@ send_key(KeySym key, int press)
     return;
   }
   keycode = XKeysymToKeycode(display, key);
-  XTestFakeKeyEvent(display, keycode, press ? True : False, DELAY);
+
+  if (keycode > 0) {
+    XTestFakeKeyEvent(display, keycode, press ? True : False, DELAY);
+  } else {
+    fprintf(stderr, "key(%d) translates into invalid keycode(%d)\n", (unsigned int)key, keycode);
+  }
 }
 
 stroke *
