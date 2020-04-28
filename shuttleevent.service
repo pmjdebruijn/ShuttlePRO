@@ -1,0 +1,10 @@
+[Unit]
+Description=Contour Shuttle Event Service
+
+[Service]
+Environment="DISPLAY=:0"
+Environment="XAUTHORITY=/home/%i/.Xauthority"
+ExecStart=/usr/bin/shuttleevent
+
+[Install]
+WantedBy=default.target
