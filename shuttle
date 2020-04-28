@@ -1,3 +1,0 @@
-#!/bin/bash
-
-exec shuttlepro /dev/input/by-id/usb-Contour_Design_ShuttlePRO_v2-event-if00
