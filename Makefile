@@ -4,7 +4,7 @@
 #CFLAGS=-g -W -Wall
 CFLAGS=-O3 -W -Wall
 
-INSTALL_DIR=/usr/local/bin
+DESTDIR=
 
 OBJ=\
 	readconfig.o \
@@ -13,7 +13,12 @@ OBJ=\
 all: shuttleevent
 
 install: all
-	install shuttleevent ${INSTALL_DIR}
+	install -d ${DESTDIR}/lib/udev/rules.d
+	install -m 0644 99-contour-shuttle.rules ${DESTDIR}/lib/udev/rules.d
+	install -d ${DESTDIR}/usr/bin
+	install -m 0755 shuttleevent ${DESTDIR}/usr/bin
+	install -d ${DESTDIR}/usr/lib/systemd/user
+	install -m 0644 shuttleevent.service ${DESTDIR}/usr/lib/systemd/user
 
 shuttleevent: ${OBJ}
 	gcc ${CFLAGS} ${OBJ} -o shuttleevent -L /usr/X11R6/lib -lX11 -lXtst
