@@ -1,0 +1,8 @@
+
+# Allows global read access to any Contour Shuttle device
+
+ATTRS{name}=="Contour Design ShuttlePRO v2" MODE="0644"
+
+ATTRS{name}=="Contour Design ShuttleXpress", MODE="0644"
+
+ATTRS{name}=="CAVS SpaceShuttle A/V", MODE="0644"
