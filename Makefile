@@ -10,16 +10,16 @@ OBJ=\
 	readconfig.o \
 	shuttlepro.o
 
-all: shuttlepro
+all: shuttleevent
 
 install: all
-	install shuttle shuttlepro ${INSTALL_DIR}
+	install shuttleevent ${INSTALL_DIR}
 
-shuttlepro: ${OBJ}
-	gcc ${CFLAGS} ${OBJ} -o shuttlepro -L /usr/X11R6/lib -lX11 -lXtst
+shuttleevent: ${OBJ}
+	gcc ${CFLAGS} ${OBJ} -o shuttleevent -L /usr/X11R6/lib -lX11 -lXtst
 
 clean:
-	rm -f shuttlepro keys.h $(OBJ)
+	rm -f shuttleevent keys.h $(OBJ)
 
 keys.h: keys.sed /usr/include/X11/keysymdef.h
 	sed -f keys.sed < /usr/include/X11/keysymdef.h > keys.h
