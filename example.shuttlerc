@@ -183,6 +183,24 @@
  JL XK_Left     # Frame reverse
  JR XK_Right    # Frame forward
 
+# Flowblade
+
+[Flowblade] Flowblade$
+ K5 "I"         # Mark In
+ K6 XK_Shift_L/D "I"
+ K7 XK_space    # Play/Pause
+ K8 XK_Shift_L/D "O"
+ K9 "O"         # Mark Out
+
+ S-3 XK_Control_L/D XK_Left XK_Left XK_Left
+ S-2 XK_Control_L/D XK_Left XK_Left
+ S-1 XK_Control_L/D XK_Left
+ S1 XK_Control_L/D XK_Right
+ S2 XK_Control_L/D XK_Right XK_Right
+ S3 XK_Control_L/D XK_Right XK_Right XK_Right
+
+ JL XK_Left     # Frame reverse
+ JR XK_Right    # Frame forward
 
 # Default (mouse emulation)
 
