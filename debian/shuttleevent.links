@@ -1,0 +1,1 @@
+usr/lib/systemd/user/shuttleevent.service usr/lib/systemd/user/graphical-session.target.wants/shuttleevent.service

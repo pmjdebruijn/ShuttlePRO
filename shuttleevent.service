@@ -7,4 +7,4 @@ Environment="XAUTHORITY=/home/%i/.Xauthority"
 ExecStart=/usr/bin/shuttleevent
 
 [Install]
-WantedBy=default.target
+WantedBy=graphical-session.target
