@@ -2,7 +2,7 @@ Source: shuttleevent
 Section: video
 Priority: optional
 Maintainer: Pascal de Bruijn <pmjdebruijn@pcode.nl>
-Build-Depends: libbsd-dev, libx11-dev, libxtst-dev, libxdmcp-dev, libxau-dev, libxext-dev, x11proto-dev
+Build-Depends: libx11-dev, libxtst-dev
 Standards-Version: 4.1.1
 Homepage: https://github.com/pmjdebruijn/shuttleevent
 
