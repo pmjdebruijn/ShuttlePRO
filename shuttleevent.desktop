@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Contour Shuttle Event Service
+Comment=Contour Shuttle Event Service
+Exec=/usr/bin/shuttleevent
+OnlyShowIn=XFCE;
+NoDisplay=true

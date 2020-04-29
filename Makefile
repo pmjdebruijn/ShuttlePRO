@@ -19,6 +19,8 @@ install: all
 	install -m 0755 shuttleevent ${DESTDIR}/usr/bin
 	install -d ${DESTDIR}/usr/lib/systemd/user
 	install -m 0644 shuttleevent.service ${DESTDIR}/usr/lib/systemd/user
+	install -d ${DESTDIR}/etc/xdg/autostart
+	install -m 0644 shuttleevent.desktop ${DESTDIR}/etc/xdg/autostart
 	install -d ${DESTDIR}/usr/share/doc/shuttleevent/examples
 	install -m 0644 example.shuttlerc ${DESTDIR}/usr/share/doc/shuttleevent/examples
 
